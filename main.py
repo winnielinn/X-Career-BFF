@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request, \
     HTTPException, \
     Depends, \
     APIRouter
+from fastapi.responses import JSONResponse
 from src.config import exception
 
 STAGE = os.environ.get('STAGE')
@@ -18,7 +19,7 @@ exception.include_app(app)
 async def info(term: str):
     if term != 'yolo':
         raise HTTPException(status_code=418, detail='Oops! Wrong phrase. Guess again?')
-    return {'mention': 'You only live once.'}
+    return JSONResponse(content={'mention': 'You only live once.'})
 
 # Mangum Handler, this is so important
 handler = Mangum(app)

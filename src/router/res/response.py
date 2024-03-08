@@ -1,3 +1,4 @@
+from fastapi.responses import JSONResponse
 from typing import Optional, Any, Dict
 from pydantic import create_model, BaseModel
 
@@ -20,19 +21,19 @@ def post_response(route: str, model: Any) -> (Dict):
     return responses
 
 
-def res_success(data=None, msg="ok", code="0"):
-    return {
-        "code": code,
-        "msg": msg,
-        "data": data,
-    }
+def res_success(data=None, msg='ok', code='0'):
+    return JSONResponse(content={
+        'code': code,
+        'msg': msg,
+        'data': data,
+    })
 
 
-def res_err(data=None, msg="error", code="1"):
+def res_err_format(data=None, msg='error', code='1'):
     return {
-        "code": code,
-        "msg": msg,
-        "data": data,
+        'code': code,
+        'msg': msg,
+        'data': data,
     }
 
 

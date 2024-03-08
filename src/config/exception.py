@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.responses import JSONResponse
 from typing import Any
-from ..router.res.response import res_err
+from ..router.res.response import res_err_format
 import logging as log
 
 log.basicConfig(filemode='w', level=log.INFO)
@@ -95,28 +95,28 @@ class ServerException(HTTPException, ErrorLogger):
 
 
 def __client_exception_handler(request: Request, exc: ClientException):
-    return JSONResponse(status_code=exc.status_code, content=res_err(msg=exc.msg, code=exc.code, data=exc.data))
+    return JSONResponse(status_code=exc.status_code, content=res_err_format(msg=exc.msg, code=exc.code, data=exc.data))
 
 def __unauthorized_exception_handler(request: Request, exc: UnauthorizedException):
-    return JSONResponse(status_code=exc.status_code, content=res_err(msg=exc.msg, code=exc.code, data=exc.data))
+    return JSONResponse(status_code=exc.status_code, content=res_err_format(msg=exc.msg, code=exc.code, data=exc.data))
 
 def __forbidden_exception_handler(request: Request, exc: ForbiddenException):
-    return JSONResponse(status_code=exc.status_code, content=res_err(msg=exc.msg, code=exc.code, data=exc.data))
+    return JSONResponse(status_code=exc.status_code, content=res_err_format(msg=exc.msg, code=exc.code, data=exc.data))
 
 def __not_found_exception_handler(request: Request, exc: NotFoundException):
-    return JSONResponse(status_code=exc.status_code, content=res_err(msg=exc.msg, code=exc.code, data=exc.data))
+    return JSONResponse(status_code=exc.status_code, content=res_err_format(msg=exc.msg, code=exc.code, data=exc.data))
 
 def __not_acceptable_exception_handler(request: Request, exc: NotAcceptableException):
-    return JSONResponse(status_code=exc.status_code, content=res_err(msg=exc.msg, code=exc.code, data=exc.data))
+    return JSONResponse(status_code=exc.status_code, content=res_err_format(msg=exc.msg, code=exc.code, data=exc.data))
 
 def __duplicate_user_exception_handler(request: Request, exc: DuplicateUserException):
-    return JSONResponse(status_code=exc.status_code, content=res_err(msg=exc.msg, code=exc.code, data=exc.data))
+    return JSONResponse(status_code=exc.status_code, content=res_err_format(msg=exc.msg, code=exc.code, data=exc.data))
 
 def __too_many_requests_exception_handler(request: Request, exc: TooManyRequestsException):
-    return JSONResponse(status_code=exc.status_code, content=res_err(msg=exc.msg, code=exc.code, data=exc.data))
+    return JSONResponse(status_code=exc.status_code, content=res_err_format(msg=exc.msg, code=exc.code, data=exc.data))
 
 def __server_exception_handler(request: Request, exc: ServerException):
-    return JSONResponse(status_code=exc.status_code, content=res_err(msg=exc.msg, code=exc.code, data=exc.data))
+    return JSONResponse(status_code=exc.status_code, content=res_err_format(msg=exc.msg, code=exc.code, data=exc.data))
 
 
 
