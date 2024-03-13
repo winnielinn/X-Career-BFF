@@ -1,10 +1,10 @@
 from typing import List, Dict, Any
 from pydantic import EmailStr
-from fastapi import APIRouter, \
-    Request, Depends, \
-    Cookie, Header, Path, Query, Body, Form, \
-    File, UploadFile, status, \
-    HTTPException
+from fastapi import (
+    APIRouter,
+    Request, Depends,
+    Cookie, Header, Path, Query, Body, Form
+)
 from ...domain.account.model.auth_model import *
 from ..req.auth_validation import *
 from ..res.response import *

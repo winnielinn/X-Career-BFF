@@ -1,14 +1,14 @@
 import os
 from mangum import Mangum
 from fastapi import FastAPI, Request, \
-    Cookie, Header, Path, Query, Body, Form, \
+    Header, Path, Query, Body, Form, \
     File, UploadFile, status, \
     HTTPException, \
     Depends, \
     APIRouter
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from src.router.v1 import account, mentee, mentor
+from src.router.v1 import account, user, mentor
 from src.config import exception
 
 STAGE = os.environ.get('STAGE')
@@ -25,7 +25,7 @@ app.add_middleware(
 
 router_v1 = APIRouter(prefix='/api/v1')
 router_v1.include_router(account.router)
-router_v1.include_router(mentee.router)
+router_v1.include_router(user.router)
 router_v1.include_router(mentor.router)
 
 app.include_router(router_v1)
