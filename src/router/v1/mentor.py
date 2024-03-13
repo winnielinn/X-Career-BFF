@@ -16,13 +16,13 @@ log.basicConfig(filemode='w', level=log.INFO)
 
 
 router = APIRouter(
-    prefix='/mentors',
+    prefix='/users',
     tags=['Mentor'],
     responses={404: {'description': 'Not found'}},
 )
 
 
-@router.put('/{user_id}/profile',
+@router.put('/{user_id}/mentor-profile',
             responses=post_response('upsert_mentor_profile', Any))
 def upsert_mentor_profile(
     user_id: int = Path(...),
@@ -32,7 +32,7 @@ def upsert_mentor_profile(
     return res_success(data=None)
 
 
-@router.get('/{user_id}/profile',
+@router.get('/{user_id}/mentor-profile',
             responses=idempotent_response('get_mentor_profile', Any))
 def get_mentor_profile(
     user_id: int = Path(...),
