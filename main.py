@@ -8,7 +8,12 @@ from fastapi import FastAPI, Request, \
     APIRouter
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from src.router.v1 import account, user, mentor
+from src.router.v1 import (
+    account,
+    user,
+    mentor,
+    search,
+)
 from src.config import exception
 
 STAGE = os.environ.get('STAGE')
@@ -27,6 +32,7 @@ router_v1 = APIRouter(prefix='/api/v1')
 router_v1.include_router(account.router)
 router_v1.include_router(user.router)
 router_v1.include_router(mentor.router)
+router_v1.include_router(search.router)
 
 app.include_router(router_v1)
 

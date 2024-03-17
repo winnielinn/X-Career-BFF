@@ -7,7 +7,15 @@ from fastapi import (
     Request, Depends,
     Header, Path, Query, Body, Form
 )
+from ...domain.mentor.model import (
+    mentor_model as mentor,
+    experience_model as experience,
+)
+from ...domain.user.model import (
+    common_model as common,
+)
 from ..res.response import *
+from ...config.conf import *
 from ...config.constant import *
 from ...config.exception import *
 import logging as log
@@ -23,17 +31,17 @@ router = APIRouter(
 
 
 @router.put('/{user_id}/mentor-profile',
-            responses=post_response('upsert_mentor_profile', Any))
+            responses=idempotent_response('upsert_mentor_profile', mentor.MentorProfileVO))
 def upsert_mentor_profile(
     user_id: int = Path(...),
-    body: Any = Body(...),
+    body: mentor.MentorProfileDTO = Body(...),
 ):
     # TODO: implement
     return res_success(data=None)
 
 
 @router.get('/{user_id}/mentor-profile',
-            responses=idempotent_response('get_mentor_profile', Any))
+            responses=idempotent_response('get_mentor_profile', mentor.MentorProfileVO))
 def get_mentor_profile(
     user_id: int = Path(...),
 ):
@@ -41,11 +49,52 @@ def get_mentor_profile(
     return res_success(data=None)
 
 
-@router.put('/experiences/{experience_type}',
-            responses=post_response('upsert_experience', Any))
+@router.put('/{user_id}/experiences/{experience_type}',
+            responses=idempotent_response('upsert_experience', experience.ExperienceVO))
 def upsert_experience(
+    user_id: int = Path(...),
     experience_type: ExperienceCategory = Path(...),
-    body: Any = Body(...),
+    body: experience.ExperienceDTO = Body(...),
+):
+    # TODO: implement
+    return res_success(data=None)
+
+
+@router.delete('/{user_id}/experiences/{experience_type}/{experience_id}',
+               responses=idempotent_response('delete_experience', experience.ExperienceVO))
+def delete_experience(
+    user_id: int = Path(...),
+    experience_id: int = Path(...),
+    experience_type: ExperienceCategory = Path(...),
+):
+    # TODO: implement
+    return res_success(data=None)
+
+
+@router.get('/expertises',
+            responses=idempotent_response('get_expertises', common.ProfessionListVO))
+def get_expertises(
+    # category = ProfessionCategory.EXPERTISE = Query(...),
+):
+    # TODO: implement
+    return res_success(data=None)
+
+
+@router.put('/{user_id}/mentor-schedule',
+            responses=idempotent_response('upsert_mentor_schedule', mentor.MentorScheduleVO))
+def upsert_mentor_schedule(
+    user_id: int = Path(...),
+    body: List[mentor.TimeSlotDTO] = Body(...),
+):
+    # TODO: implement
+    return res_success(data=None)
+
+
+@router.delete('/{user_id}/mentor-schedule/{schedule_id}',
+               responses=idempotent_response('delete_mentor_schedule', mentor.MentorScheduleVO))
+def delete_mentor_schedule(
+    user_id: int = Path(...),
+    schedule_id: int = Path(...),
 ):
     # TODO: implement
     return res_success(data=None)

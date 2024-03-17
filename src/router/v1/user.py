@@ -9,6 +9,8 @@ from fastapi import (
 )
 from ...domain.user.model import (
     common_model as common,
+    user_model as user,
+    reservation_model as reservation,
 )
 from ..res.response import *
 from ...config.constant import *
@@ -26,17 +28,17 @@ router = APIRouter(
 
 
 @router.put('/{user_id}/profile',
-            responses=post_response('upsert_profile', Any))
+            responses=idempotent_response('upsert_profile', user.ProfileVO))
 def upsert_profile(
     user_id: int = Path(...),
-    body: Any = Body(...),
+    body: user.ProfileDTO = Body(...),
 ):
     # TODO: implement
     return res_success(data=None)
 
 
 @router.get('/{user_id}/profile',
-            responses=idempotent_response('get_profile', Any))
+            responses=idempotent_response('get_profile', user.ProfileVO))
 def get_profile(
     user_id: int = Path(...),
 ):
@@ -53,10 +55,43 @@ def get_interests(
     return res_success(data=None)
 
 
-@router.get('/professions',
-            responses=idempotent_response('get_professions', common.ProfessionListVO))
-def get_professions(
-    profession: ProfessionCategory = Query(...),
+@router.get('/industries',
+            responses=idempotent_response('get_industries', common.ProfessionListVO))
+def get_industries(
+    # category = ProfessionCategory.INDUSTRY = Query(...),
+):
+    # TODO: implement
+    return res_success(data=None)
+
+
+@router.get('/{user_id}/reservations',
+            responses=idempotent_response('reservation_list', reservation.ReservationListVO))
+def reservation_list(
+    user_id: int = Path(...),
+    state: ReservationListState = Query(...),
+    batch: int = Query(...),
+    next_id: int = Query(None),
+):
+    # TODO: implement
+    return res_success(data=None)
+
+
+@router.post('/{user_id}/reservations',
+             responses=post_response('new_booking', reservation.ReservationVO))
+def new_booking(
+    user_id: int = Path(...),
+    body: reservation.ReservationDTO = Body(...),
+):
+    # TODO: implement
+    return res_success(data=None)
+
+
+@router.put('/{user_id}/reservations/{reservation_id}',
+            responses=idempotent_response('update_or_delete_booking', reservation.ReservationVO))
+def update_or_delete_booking(
+    user_id: int = Path(...),
+    reservation_id: int = Path(...),
+    body: reservation.ReservationDTO = Body(...),
 ):
     # TODO: implement
     return res_success(data=None)
