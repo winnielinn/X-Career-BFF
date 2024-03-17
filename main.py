@@ -13,7 +13,6 @@ from src.router.v1 import (
     user,
     mentor,
     search,
-    reservation,
 )
 from src.config import exception
 
@@ -34,7 +33,6 @@ router_v1.include_router(account.router)
 router_v1.include_router(user.router)
 router_v1.include_router(mentor.router)
 router_v1.include_router(search.router)
-router_v1.include_router(reservation.router)
 
 app.include_router(router_v1)
 
