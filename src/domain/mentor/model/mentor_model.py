@@ -30,7 +30,7 @@ class MentorProfileVO(ProfileVO):
 
 
 class TimeSlotDTO(BaseModel):
-    id: Optional[int]
+    schedule_id: Optional[int]
     type: ScheduleType
     year: int = SCHEDULE_YEAR
     month: int = SCHEDULE_MONTH
@@ -41,7 +41,7 @@ class TimeSlotDTO(BaseModel):
 
 
 class TimeSlotVO(TimeSlotDTO):
-    id: int
+    schedule_id: int
 
 
 class MentorScheduleVO(BaseModel):

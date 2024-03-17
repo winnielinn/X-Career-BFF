@@ -38,3 +38,11 @@ class ReservationListState(Enum):
     UPCOMING = 'upcoming'
     PENDING = 'pending'
     HISTORY = 'history'
+
+class SortingBy(Enum):
+    UPDATED_TIME = 'updated_time'
+    # VIEW = 'view'
+
+class Sorting(Enum):
+    ASC = 1
+    DESC = -1

@@ -4,7 +4,7 @@ from fastapi import (
     Request, Depends,
     Header, Path, Query, Body, Form
 )
-from ...domain.reservation.model import (
+from ...domain.user.model import (
     reservation_model as reservation,
 )
 from ..res.response import *
