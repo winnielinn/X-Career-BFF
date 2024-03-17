@@ -8,6 +8,7 @@ log.basicConfig(filemode='w', level=log.INFO)
 
 
 class InterestVO(BaseModel):
+    id: int
     category: InterestCategory
     subject: str
     desc: Dict
@@ -17,8 +18,12 @@ class InterestListVO(BaseModel):
     interests: List[InterestVO] = []
 
 
-class ProfessionVO(BaseModel):
+class ProfessionDTO(BaseModel):
+    id: int
     category: ProfessionCategory
+
+
+class ProfessionVO(ProfessionDTO):
     subject: str
     metadata: Dict
 

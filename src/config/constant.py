@@ -16,3 +16,8 @@ class ExperienceCategory(Enum):
     WORK = 'work'
     EDUCATION = 'education'
     LINK = 'link'
+
+
+class ScheduleType(Enum):
+    ALLOW = 'allow'
+    FORBIDDEN = 'forbidden'

@@ -9,6 +9,7 @@ from fastapi import (
 )
 from ...domain.user.model import (
     common_model as common,
+    user_model as user,
 )
 from ..res.response import *
 from ...config.constant import *
@@ -26,17 +27,17 @@ router = APIRouter(
 
 
 @router.put('/{user_id}/profile',
-            responses=post_response('upsert_profile', Any))
+            responses=idempotent_response('upsert_profile', user.ProfileVO))
 def upsert_profile(
     user_id: int = Path(...),
-    body: Any = Body(...),
+    body: user.ProfileDTO = Body(...),
 ):
     # TODO: implement
     return res_success(data=None)
 
 
 @router.get('/{user_id}/profile',
-            responses=idempotent_response('get_profile', Any))
+            responses=idempotent_response('get_profile', user.ProfileVO))
 def get_profile(
     user_id: int = Path(...),
 ):
