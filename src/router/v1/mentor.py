@@ -60,6 +60,17 @@ def upsert_experience(
     return res_success(data=None)
 
 
+@router.delete('/{user_id}/experiences/{experience_type}/{experience_id}',
+               responses=idempotent_response('delete_experience', experience.ExperienceVO))
+def delete_experience(
+    user_id: int = Path(...),
+    experience_id: int = Path(...),
+    experience_type: ExperienceCategory = Path(...),
+):
+    # TODO: implement
+    return res_success(data=None)
+
+
 @router.get('/expertises',
             responses=idempotent_response('get_expertises', common.ProfessionListVO))
 def get_expertises(
@@ -74,6 +85,16 @@ def get_expertises(
 def upsert_mentor_schedule(
     user_id: int = Path(...),
     body: List[mentor.TimeSlotDTO] = Body(...),
+):
+    # TODO: implement
+    return res_success(data=None)
+
+
+@router.delete('/{user_id}/mentor-schedule/{schedule_id}',
+               responses=idempotent_response('delete_mentor_schedule', mentor.MentorScheduleVO))
+def delete_mentor_schedule(
+    user_id: int = Path(...),
+    schedule_id: int = Path(...),
 ):
     # TODO: implement
     return res_success(data=None)
