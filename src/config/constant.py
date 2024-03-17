@@ -21,3 +21,20 @@ class ExperienceCategory(Enum):
 class ScheduleType(Enum):
     ALLOW = 'allow'
     FORBIDDEN = 'forbidden'
+
+
+class RoleType(Enum):
+    MENTOR = 'mentor'
+    MENTEE = 'mentee'
+
+
+class BookingStatus(Enum):
+    PENDING = 'pending'
+    ACCEPT = 'accept'
+    REJECT = 'reject'
+
+
+class ReservationListState(Enum):
+    UPCOMING = 'upcoming'
+    PENDING = 'pending'
+    HISTORY = 'history'

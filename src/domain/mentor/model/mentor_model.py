@@ -13,7 +13,7 @@ import logging as log
 log.basicConfig(filemode='w', level=log.INFO)
 
 
-class MentorProfileDTO(ProfileDTO):
+class MentorProfileDTO(BaseModel):
     personal_statement: Optional[str]
     about: Optional[str]
     # TODO: enum

@@ -69,6 +69,7 @@ def get_expertises(
     return res_success(data=None)
 
 
+# TODO: no user validation and be searchable for public
 @router.get('/{user_id}/mentor-schedule',
             responses=idempotent_response('get_mentor_schedule', mentor.MentorScheduleVO))
 def get_mentor_schedule(
