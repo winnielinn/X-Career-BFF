@@ -29,13 +29,14 @@ class AsyncUserDataVO(UserStatusDTO):
     position: Optional[str]
     company: Optional[str]
     industry: Optional[ProfessionVO]
+    role: Optional[RoleType]
 
 
 class ReservationVO(BaseModel):
     id: int
     schedule_id: int
-    mentor: Optional[AsyncUserDataVO]
-    mentee: Optional[AsyncUserDataVO]
+    participant: AsyncUserDataVO
+    my_status: BookingStatus
     start_datetime: int
     end_datetime: int
     message: Optional[str]
