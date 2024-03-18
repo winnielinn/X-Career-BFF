@@ -9,27 +9,27 @@ import logging as log
 log.basicConfig(filemode='w', level=log.INFO)
 
 
-class UserStatusDTO(BaseModel):
+class UserDTO(BaseModel):
     user_id: int
-    status: BookingStatus
+    role: RoleType
 
 
 class ReservationDTO(BaseModel):
     schedule_id: int
-    mentor: UserStatusDTO
-    mentee: UserStatusDTO
+    participant: UserDTO
+    my_status: BookingStatus
     start_datetime: int
     end_datetime: int
     message: Optional[str]
 
 
-class AsyncUserDataVO(UserStatusDTO):
+class AsyncUserDataVO(UserDTO):
     name: Optional[str]
     avator: Optional[str]
     position: Optional[str]
     company: Optional[str]
     industry: Optional[ProfessionVO]
-    role: Optional[RoleType]
+    status: BookingStatus
 
 
 class ReservationVO(BaseModel):
