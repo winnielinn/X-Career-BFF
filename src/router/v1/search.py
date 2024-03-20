@@ -29,7 +29,7 @@ router = APIRouter(
 # TODO: read from SEARCH service
 @router.get('',
             responses=idempotent_response('mentor_list', search.SearchMentorProfileListVO))
-def mentor_list(
+async def mentor_list(
     search_patterns: List[str] = Query(None),
     filter_positions: List[str] = Query(None),
     filter_skills: List[str] = Query(None),
@@ -58,7 +58,7 @@ def mentor_list(
 # TODO: read from professional service
 @router.get('/{user_id}',
             responses=idempotent_response('get_mentor', mentor.MentorProfileVO))
-def get_mentor(
+async def get_mentor(
     user_id: int = Path(...),
 ):
     # TODO: implement
@@ -68,7 +68,7 @@ def get_mentor(
 # TODO: read from professional service
 @router.get('/{user_id}/schedule',
             responses=idempotent_response('get_mentor_schedule', mentor.MentorScheduleVO))
-def get_mentor_schedule(
+async def get_mentor_schedule(
     user_id: int = Path(...),
     year: int = Query(SCHEDULE_YEAR),
     batch: int = Query(BATCH),

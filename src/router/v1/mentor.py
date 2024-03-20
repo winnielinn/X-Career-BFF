@@ -32,7 +32,7 @@ router = APIRouter(
 
 @router.put('/{user_id}/mentor-profile',
             responses=idempotent_response('upsert_mentor_profile', mentor.MentorProfileVO))
-def upsert_mentor_profile(
+async def upsert_mentor_profile(
     user_id: int = Path(...),
     body: mentor.MentorProfileDTO = Body(...),
 ):
@@ -42,7 +42,7 @@ def upsert_mentor_profile(
 
 @router.get('/{user_id}/mentor-profile',
             responses=idempotent_response('get_mentor_profile', mentor.MentorProfileVO))
-def get_mentor_profile(
+async def get_mentor_profile(
     user_id: int = Path(...),
 ):
     # TODO: implement
@@ -51,7 +51,7 @@ def get_mentor_profile(
 
 @router.put('/{user_id}/experiences/{experience_type}',
             responses=idempotent_response('upsert_experience', experience.ExperienceVO))
-def upsert_experience(
+async def upsert_experience(
     user_id: int = Path(...),
     experience_type: ExperienceCategory = Path(...),
     body: experience.ExperienceDTO = Body(...),
@@ -62,7 +62,7 @@ def upsert_experience(
 
 @router.delete('/{user_id}/experiences/{experience_type}/{experience_id}',
                responses=idempotent_response('delete_experience', experience.ExperienceVO))
-def delete_experience(
+async def delete_experience(
     user_id: int = Path(...),
     experience_id: int = Path(...),
     experience_type: ExperienceCategory = Path(...),
@@ -73,7 +73,7 @@ def delete_experience(
 
 @router.get('/expertises',
             responses=idempotent_response('get_expertises', common.ProfessionListVO))
-def get_expertises(
+async def get_expertises(
     # category = ProfessionCategory.EXPERTISE = Query(...),
 ):
     # TODO: implement
@@ -82,7 +82,7 @@ def get_expertises(
 
 @router.put('/{user_id}/mentor-schedule',
             responses=idempotent_response('upsert_mentor_schedule', mentor.MentorScheduleVO))
-def upsert_mentor_schedule(
+async def upsert_mentor_schedule(
     user_id: int = Path(...),
     body: List[mentor.TimeSlotDTO] = Body(...),
 ):
@@ -92,7 +92,7 @@ def upsert_mentor_schedule(
 
 @router.delete('/{user_id}/mentor-schedule/{schedule_id}',
                responses=idempotent_response('delete_mentor_schedule', mentor.MentorScheduleVO))
-def delete_mentor_schedule(
+async def delete_mentor_schedule(
     user_id: int = Path(...),
     schedule_id: int = Path(...),
 ):

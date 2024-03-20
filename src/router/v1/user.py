@@ -29,7 +29,7 @@ router = APIRouter(
 
 @router.put('/{user_id}/profile',
             responses=idempotent_response('upsert_profile', user.ProfileVO))
-def upsert_profile(
+async def upsert_profile(
     user_id: int = Path(...),
     body: user.ProfileDTO = Body(...),
 ):
@@ -39,7 +39,7 @@ def upsert_profile(
 
 @router.get('/{user_id}/profile',
             responses=idempotent_response('get_profile', user.ProfileVO))
-def get_profile(
+async def get_profile(
     user_id: int = Path(...),
 ):
     # TODO: implement
@@ -48,7 +48,7 @@ def get_profile(
 
 @router.get('/interests',
             responses=idempotent_response('get_interests', common.InterestListVO))
-def get_interests(
+async def get_interests(
     interest: InterestCategory = Query(...),
 ):
     # TODO: implement
@@ -57,7 +57,7 @@ def get_interests(
 
 @router.get('/industries',
             responses=idempotent_response('get_industries', common.ProfessionListVO))
-def get_industries(
+async def get_industries(
     # category = ProfessionCategory.INDUSTRY = Query(...),
 ):
     # TODO: implement
@@ -66,7 +66,7 @@ def get_industries(
 
 @router.get('/{user_id}/reservations',
             responses=idempotent_response('reservation_list', reservation.ReservationListVO))
-def reservation_list(
+async def reservation_list(
     user_id: int = Path(...),
     state: ReservationListState = Query(...),
     batch: int = Query(...),
@@ -78,7 +78,7 @@ def reservation_list(
 
 @router.post('/{user_id}/reservations',
              responses=post_response('new_booking', reservation.ReservationVO))
-def new_booking(
+async def new_booking(
     user_id: int = Path(...),
     body: reservation.ReservationDTO = Body(...),
 ):
@@ -88,7 +88,7 @@ def new_booking(
 
 @router.put('/{user_id}/reservations/{reservation_id}',
             responses=idempotent_response('update_or_delete_booking', reservation.ReservationVO))
-def update_or_delete_booking(
+async def update_or_delete_booking(
     user_id: int = Path(...),
     reservation_id: int = Path(...),
     body: reservation.ReservationDTO = Body(...),

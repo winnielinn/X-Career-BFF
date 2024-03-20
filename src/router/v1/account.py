@@ -22,7 +22,7 @@ router = APIRouter(
 
 
 @router.post('/signup', status_code=201)
-def signup(
+async def signup(
     body: SignupDTO = Body(...),
 ):
     # TODO: implement
@@ -32,7 +32,7 @@ def signup(
 @router.post('/signup/confirm',
              responses=post_response('confirm_signup', SignupResponseVO),
              status_code=201)
-def confirm_signup(
+async def confirm_signup(
     body: SignupConfirmDTO = Body(...),
 ):
     # TODO: implement
@@ -42,7 +42,7 @@ def confirm_signup(
 @router.post('/login',
              responses=post_response('login', LoginResponseVO),
              status_code=201)
-def login(
+async def login(
     body: LoginDTO = Depends(login_check_body),
 ):
     # TODO: implement
@@ -50,7 +50,7 @@ def login(
 
 
 @router.post('/logout', status_code=201)
-def logout(
+async def logout(
     user_id: int = Body(..., embed=True),
 ):
     # TODO: implement
@@ -58,7 +58,7 @@ def logout(
 
 
 @router.put('/password/{user_id}/update')
-def update_password(
+async def update_password(
     user_id: int,
     update_password_dto: UpdatePasswordDTO = Body(...),
 ):
@@ -67,7 +67,7 @@ def update_password(
 
 
 @router.get('/password/reset/email')
-def send_reset_password_comfirm_email(
+async def send_reset_password_comfirm_email(
     email: EmailStr,
 ):
     # TODO: implement
@@ -75,7 +75,7 @@ def send_reset_password_comfirm_email(
 
 
 @router.put('/password/reset')
-def reset_password(
+async def reset_password(
     reset_passwrod_dto: ResetPasswordDTO = Body(...),
     verify_token: str = Query(...),
 ):
