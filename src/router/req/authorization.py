@@ -101,7 +101,7 @@ async def verify_token(request: Request):
 def verify_token_by_update_password(credentials: HTTPAuthorizationCredentials = Depends(auth_scheme),
                                     role_id: int = Path(...),
                                     ):
-    __verify_token_in_auth(role_id, credentials, "access denied")
+    __verify_token_in_auth(role_id, credentials, 'access denied')
 
 
 class AuthRoute(APIRoute):
