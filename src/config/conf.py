@@ -1,6 +1,10 @@
 import os
 import json
 
+JWT_SECRET = os.getenv('JWT_SECRET', None)
+JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', 'HS256')
+TOKEN_EXPIRE_TIME = int(os.getenv('TOKEN_EXPIRE_TIME', 60 * 60 * 24 * 7))
+
 BATCH = int(os.getenv('BATCH', '10'))
 
 # schedule

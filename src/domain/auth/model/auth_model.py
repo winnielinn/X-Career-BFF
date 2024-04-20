@@ -23,6 +23,7 @@ class SignupDTO(BaseModel):
 
 
 class SignupConfirmDTO(BaseModel):
+    region: Optional[str]
     email: EmailStr
     confirm_code: str
 
@@ -68,9 +69,12 @@ class ResetPasswordDTO(BaseModel):
 class UpdatePasswordDTO(ResetPasswordDTO):
     origin_password: str
 
-
-class AccountVO(BaseModel):
+class BaseAuthDTO(BaseModel):
+    # registration region
+    region: str
     user_id: int
+
+class AuthVO(BaseAuthDTO):
     email: EmailStr
     token: str
     online: Optional[bool] = False
@@ -78,8 +82,9 @@ class AccountVO(BaseModel):
 
 
 class SignupResponseVO(BaseModel):
-    account: AccountVO
+    auth: AuthVO
 
 
 class LoginResponseVO(SignupResponseVO):
-    professional: Dict
+    # TODO: define user VO
+    user: Dict

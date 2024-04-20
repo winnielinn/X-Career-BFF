@@ -1,5 +1,5 @@
 from fastapi import Header, Body
-from ...domain.account.model.auth_model import *
+from ...domain.auth.model.auth_model import *
 
 
 def login_check_body(
