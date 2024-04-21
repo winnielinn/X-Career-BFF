@@ -24,13 +24,13 @@ log.basicConfig(filemode='w', level=log.INFO)
 
 
 router = APIRouter(
-    prefix='/users',
+    prefix='/mentors',
     tags=['Mentor'],
     responses={404: {'description': 'Not found'}},
 )
 
 
-@router.put('/{user_id}/mentor-profile',
+@router.put('/{user_id}/profile',
             responses=idempotent_response('upsert_mentor_profile', mentor.MentorProfileVO))
 async def upsert_mentor_profile(
     user_id: int = Path(...),
@@ -40,7 +40,7 @@ async def upsert_mentor_profile(
     return res_success(data=None)
 
 
-@router.get('/{user_id}/mentor-profile',
+@router.get('/{user_id}/profile',
             responses=idempotent_response('get_mentor_profile', mentor.MentorProfileVO))
 async def get_mentor_profile(
     user_id: int = Path(...),
@@ -80,7 +80,7 @@ async def get_expertises(
     return res_success(data=None)
 
 
-@router.put('/{user_id}/mentor-schedule',
+@router.put('/{user_id}/schedule',
             responses=idempotent_response('upsert_mentor_schedule', mentor.MentorScheduleVO))
 async def upsert_mentor_schedule(
     user_id: int = Path(...),
@@ -90,7 +90,7 @@ async def upsert_mentor_schedule(
     return res_success(data=None)
 
 
-@router.delete('/{user_id}/mentor-schedule/{schedule_id}',
+@router.delete('/{user_id}/schedule/{schedule_id}',
                responses=idempotent_response('delete_mentor_schedule', mentor.MentorScheduleVO))
 async def delete_mentor_schedule(
     user_id: int = Path(...),
