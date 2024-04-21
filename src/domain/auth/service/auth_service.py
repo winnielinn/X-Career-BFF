@@ -115,19 +115,37 @@ class AuthService:
         return res
     
     '''
-    pre login API:
+    login preload process:
+    若有機會在異地登入，則將登入流程改為 email 和 password 拆開：
+        1) preload process API A => 用戶輸入 `email`
+        2) preload process API B => 用戶輸入 `password`
     
-    若有機會在異地登入(不論是否真的在異地登入，因為無法確定)，則將登入流程改為 email 和 password 拆開：
-    1. frontend: input `email`
-    2. backend: gateway 直接訪問 S3, 取得該 email 的註冊地
-        若在本地:
-            則直接 `透過 auth service` 存取本地資料
-        若在異地(如何確定在異地? gateway 需要知道 current_region)
-            將資料 `透過 auth service` 從註冊地異步的複製到`目前所在地`
-    3. frontend: input `password`
-    4. backend: 若密碼正確則允許登入，可在`目前所在地`存取用戶資料
-        此時不管用戶是否登入成功，該用戶資料早已 `透過 step 2` 複製到`目前所在地`
-    5. 將 region (registration region) 緩存至手機或網頁(local storage)
+    preload process API A:
+    1. frontend: 用戶輸入 `email`
+    2. backend: 透過 email 請求 `auth service` 存取[本地]用戶資料，
+        若存在，則
+            1) 緩存用戶資料(整個 table account, 包含 user_id, pass_hash, pass_salt)
+            2) 返回 frontend: `200 OK` 
+        若不存在，
+            表示用戶不在本地，走 step 3
+            
+    3. backend: gateway 訪問 S3, 取得該 email 的註冊地，
+        若存在於 S3，則
+            1) 透過 email, 註冊地(從S3找到的) 請求 `auth service` 存取[註冊地]用戶資料 ([本地] auth service 透過 kakfa 取得遠端的用戶資料?????)
+            2) 緩存用戶資料(整個 table account, 包含 user_id, pass_hash, pass_salt)
+            3) 透過 user_id, current_region(gateway env param) 請求 `user service` 從註冊地異步的複製到`目前所在地`的資料庫([本地] user service 透過 kafka)
+            4) 返回 frontend: `200 OK`
+        若不存在於 S3，則
+            表示用戶不存在，返回 frontend: `404 Not Found`
+
+    preload process API B:
+    4. frontend: 用戶輸入 `password`
+    5. backend:
+        1) 在 gateway 透過緩存的用戶資料驗證密碼，
+        2) 若密碼正確則允許登入，可在`目前所在地`存取用戶資料
+        3) 刪除緩存的用戶[敏感]資料(pass_hash, pass_salt)
+        此時不管用戶是否登入成功，該用戶資料早已 `透過 step 2` 複製到`目前所在地`的資料庫
+    6. 將 region (registration region) 緩存至手機或網頁(local storage)
         以便及早做 step 2 (在異地複製用戶資料)
     '''
     def login_preload(self, auth_host: str, user_host: str, body: LoginDTO):
