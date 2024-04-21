@@ -25,8 +25,6 @@ class AuthService:
 
     async def signup(self, host: str, body: SignupDTO):
         email = body.email
-        # TODO: not meta, check SignupDTO
-        meta = body.meta
         self.__cache_check_for_duplicates(email)
 
         code = gen_confirm_code()
@@ -34,7 +32,7 @@ class AuthService:
             host, email, code)
 
         if auth_res == 'email_sent':
-            self.__cache_confirmcode(email, code, meta)
+            self.__cache_confirmcode(email, body.password, code)
 
             # FIXME: remove the res here('code') during production
             return {
@@ -56,7 +54,6 @@ class AuthService:
         auth_res, msg, err = self.req.post(f'{host}/sendcode/email', json={
             'email': email,
             'code': code,
-            'sendby': 'no_exist',  # email 不存在時寄送
         })
         
         if msg or err:
@@ -67,12 +64,12 @@ class AuthService:
 
         return auth_res
 
-    def __cache_confirmcode(self, email: str, code: str, meta: str):
+    def __cache_confirmcode(self, email: EmailStr, password: str, code: str):
+        # TODO: region 記錄在???
         email_playload = {
             'email': email,
+            'password': password,
             'code': code,
-            # TODO: not meta, check SignupDTO
-            'meta': meta,
         }
         self.cache.set(email, email_playload, ex=SHORT_TERM_TTL)
 
@@ -83,6 +80,7 @@ class AuthService:
     async def confirm_signup(self, host: str, body: SignupConfirmDTO):
         email = body.email
         code = body.code
+        # user: {email, passowrd, code}
         user = self.cache.get(email)
         self.__verify_confirmcode(code, user)
 
@@ -90,9 +88,9 @@ class AuthService:
         self.cache.set(email, {}, ex=30)
         auth_res = self.req.simple_post(f'{host}/signup',
                                         json={
+                                            'region': body.region,
                                             'email': email,
-                                            # TODO: not meta, check SignupDTO
-                                            'meta': user['meta'],
+                                            'password': user['password'],
                                         })
 
         user_id_key = str(auth_res['user_id'])
