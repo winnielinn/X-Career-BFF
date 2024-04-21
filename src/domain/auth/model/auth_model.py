@@ -25,13 +25,13 @@ class SignupDTO(BaseModel):
 class SignupConfirmDTO(BaseModel):
     region: Optional[str]
     email: EmailStr
-    confirm_code: str
+    code: str
 
     class Config:
         schema_extra = {
             'example': {
                 'email': 'user@example.com',
-                'confirm_code': '106E7B',
+                'code': '106E7B',
             },
         }
 

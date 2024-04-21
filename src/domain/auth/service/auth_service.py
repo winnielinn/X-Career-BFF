@@ -29,16 +29,16 @@ class AuthService:
         meta = body.meta
         self.__cache_check_for_duplicates(email)
 
-        confirm_code = gen_confirm_code()
+        code = gen_confirm_code()
         auth_res = self.__req_send_confirmcode_by_email(
-            host, email, confirm_code)
+            host, email, code)
 
         if auth_res == 'email_sent':
-            self.__cache_confirmcode(email, confirm_code, meta)
+            self.__cache_confirmcode(email, code, meta)
 
-            # FIXME: remove the res here('confirm_code') during production
+            # FIXME: remove the res here('code') during production
             return {
-                'for_testing_only': confirm_code
+                'for_testing_only': code
             }
 
         else:
@@ -52,25 +52,25 @@ class AuthService:
                 email:%s, cache data:%s', email, data)
             raise DuplicateUserException(msg='registered or registering')
 
-    def __req_send_confirmcode_by_email(self, host: str, email: str, confirm_code: str):
+    def __req_send_confirmcode_by_email(self, host: str, email: str, code: str):
         auth_res, msg, err = self.req.post(f'{host}/sendcode/email', json={
             'email': email,
-            'confirm_code': confirm_code,
+            'code': code,
             'sendby': 'no_exist',  # email 不存在時寄送
         })
         
         if msg or err:
             log.error(f'{self.__cls_name}.__req_send_confirmcode_by_email:[request exception], \
-                host:%s, email:%s, confirm_code:%s, auth_res:%s, msg:%s, err:%s',
-                host, email, confirm_code, auth_res, msg, err)
+                host:%s, email:%s, code:%s, auth_res:%s, msg:%s, err:%s',
+                host, email, code, auth_res, msg, err)
             self.cache.set(email, {'avoid_freq_email_req_and_hit_db': 1}, SHORT_TERM_TTL)
 
         return auth_res
 
-    def __cache_confirmcode(self, email: str, confirm_code: str, meta: str):
+    def __cache_confirmcode(self, email: str, code: str, meta: str):
         email_playload = {
             'email': email,
-            'confirm_code': confirm_code,
+            'code': code,
             # TODO: not meta, check SignupDTO
             'meta': meta,
         }
@@ -82,9 +82,9 @@ class AuthService:
 
     async def confirm_signup(self, host: str, body: SignupConfirmDTO):
         email = body.email
-        confirm_code = body.confirm_code
+        code = body.code
         user = self.cache.get(email)
-        self.__verify_confirmcode(confirm_code, user)
+        self.__verify_confirmcode(code, user)
 
         # 'registering': empty data, but TTL=30sec
         self.cache.set(email, {}, ex=30)
@@ -100,14 +100,14 @@ class AuthService:
         auth_res = self.apply_token(auth_res)
         return {'auth': auth_res}
 
-    def __verify_confirmcode(self, confirm_code: str, user: Any):
-        if not user or not 'confirm_code' in user:
+    def __verify_confirmcode(self, code: str, user: Any):
+        if not user or not 'code' in user:
             raise NotFoundException(msg='no signup data')
 
         if user == {}:
             raise DuplicateUserException(msg='registering')
 
-        if confirm_code != str(user['confirm_code']):
+        if code != str(user['code']):
             raise ClientException(msg='wrong confirm_code')
 
     def apply_token(self, res: Dict):
