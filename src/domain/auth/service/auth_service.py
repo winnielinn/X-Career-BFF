@@ -117,9 +117,11 @@ class AuthService:
     '''
     login preload process:
     若有機會在異地登入，則將登入流程改為 email 和 password 拆開：
-        1) preload process API A => 用戶輸入 `email`
-        2) preload process API B => 用戶輸入 `password`
+        1) preload process API A => 用戶輸入 `email` => function login_preload_by_email
+        2) preload process API B => 用戶輸入 `password` => login_preload_by_email_and_password (輸入其實包含 email 和 password; email 由前端緩存, 用戶以為只送 password)
+    '''
     
+    '''
     preload process API A:
     1. frontend: 用戶輸入 `email`
     2. backend: 透過 email 請求 `auth service` 存取[本地]用戶資料，
@@ -137,23 +139,30 @@ class AuthService:
             4) 返回 frontend: `200 OK`
         若不存在於 S3，則
             表示用戶不存在，返回 frontend: `404 Not Found`
-
+    '''
+    # preload process API A => 用戶輸入 `email`(找用戶資料在哪裡)
+    def login_preload_by_email(self, auth_host: str, body: LoginDTO):
+        pass
+    
+    '''
     preload process API B:
-    4. frontend: 用戶輸入 `password`
+    4. frontend: 用戶輸入 `password`(輸入其實包含 email 和 password; email 由前端緩存, 用戶以為只送 password)
     5. backend:
         1) 在 gateway 透過緩存的用戶資料驗證密碼，
         2) 若密碼正確則允許登入，可在`目前所在地`存取用戶資料
         3) 刪除緩存的用戶[敏感]資料(pass_hash, pass_salt)
-        此時不管用戶是否登入成功，該用戶資料早已 `透過 step 2` 複製到`目前所在地`的資料庫
+        此時不管用戶是否登入成功，該用戶資料早已 `透過 step 3` 複製到`目前所在地`的資料庫
     6. 將 region (registration region) 緩存至手機或網頁(local storage)
         以便及早做 step 2 (在異地複製用戶資料)
     '''
-    def login_preload(self, auth_host: str, user_host: str, body: LoginDTO):
+    # preload process API B => 用戶輸入 `password`(異步的複製資料；輸入其實包含 email 和 password)
+    def login_preload_by_email_and_password(self, auth_host: str, user_host: str, body: LoginDTO):
         pass
+
 
     '''
     login
-    有了 `login_preload`, login 可一律視為本地登入
+    有了 login preload process, login 可一律視為本地登入
     '''
 
     async def login(self, auth_host: str, user_host: str, body: LoginDTO):

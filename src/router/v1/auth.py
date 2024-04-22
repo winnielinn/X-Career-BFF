@@ -62,7 +62,7 @@ async def login(
 async def logout(
     user_id: int = Body(..., embed=True),
 ):
-    data, msg = await _auth_service.logout(role_id)
+    data, msg = await _auth_service.logout(user_id)
     return res_success(data=data, msg=msg)
 
 
@@ -72,7 +72,7 @@ async def update_password(
     update_password_dto: UpdatePasswordDTO = Body(...),
     verify=Depends(verify_token_by_update_password),
 ):
-    await _auth_service.update_password(auth_host, role_id, update_password_vo)
+    await _auth_service.update_password(auth_host, user_id, update_password_vo)
     return res_success(msg='update success')
 
 

@@ -14,10 +14,10 @@ def gen_confirm_code():
     return code
 
 
-def get_serial_num(cache: ICache, role_id: str):
-    user = cache.get(role_id)
+def get_serial_num(cache: ICache, user_id: str):
+    user = cache.get(user_id)
     if not user or not SERIAL_KEY in user:
-        log.error(f'get_serial_num fail: [user has no \'SERIAL_KEY\'], role_id:%s', role_id)
+        log.error(f'get_serial_num fail: [user has no \'SERIAL_KEY\'], user_id:%s', user_id)
         raise ServerException(msg='user has no authrozanization')
 
     return user[SERIAL_KEY]
