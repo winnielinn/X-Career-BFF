@@ -46,3 +46,9 @@ class SortingBy(Enum):
 class Sorting(Enum):
     ASC = 1
     DESC = -1
+
+# serial_key is a field of the collection in the user's cache
+SERIAL_KEY = 'created_at'
+
+# the amount of prefetch items from match data
+PREFETCH = 3

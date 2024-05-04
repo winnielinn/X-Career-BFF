@@ -5,18 +5,27 @@ from fastapi import (
     Request, Depends,
     Cookie, Header, Path, Query, Body, Form
 )
-from ...domain.account.model.auth_model import *
+from ...domain.auth.model.auth_model import *
+from ...domain.auth.service.auth_service import AuthService
 from ..req.auth_validation import *
+from ..req.authorization import *
 from ..res.response import *
 from ...config.exception import *
+from ...config.region_host import get_auth_region_host, get_user_region_host
 import logging as log
 
 log.basicConfig(filemode='w', level=log.INFO)
 
+auth_host = get_auth_region_host()
+user_host = get_user_region_host()
+_auth_service = AuthService(
+    None, 
+    None
+)
 
 router = APIRouter(
-    prefix='/accounts',
-    tags=['Account'],
+    prefix='/auth',
+    tags=['Auth'],
     responses={404: {'description': 'Not found'}},
 )
 
@@ -25,8 +34,8 @@ router = APIRouter(
 async def signup(
     body: SignupDTO = Body(...),
 ):
-    # TODO: implement
-    return res_success(data=None, msg='email_sent')
+    data = await _auth_service.signup(auth_host, body)
+    return res_success(data=data, msg='email_sent')
 
 
 @router.post('/signup/confirm',
@@ -35,8 +44,8 @@ async def signup(
 async def confirm_signup(
     body: SignupConfirmDTO = Body(...),
 ):
-    # TODO: implement
-    return res_success(data=None)
+    data = await _auth_service.confirm_signup(auth_host, body)
+    return res_success(data=data)
 
 
 @router.post('/login',
@@ -45,24 +54,25 @@ async def confirm_signup(
 async def login(
     body: LoginDTO = Depends(login_check_body),
 ):
-    # TODO: implement
-    return res_success(data=None)
+    data = await _auth_service.login(auth_host, user_host, body)
+    return res_success(data=data)
 
 
 @router.post('/logout', status_code=201)
 async def logout(
     user_id: int = Body(..., embed=True),
 ):
-    # TODO: implement
-    return res_success(data=None, msg='msg')
+    data, msg = await _auth_service.logout(user_id)
+    return res_success(data=data, msg=msg)
 
 
 @router.put('/password/{user_id}/update')
 async def update_password(
     user_id: int,
     update_password_dto: UpdatePasswordDTO = Body(...),
+    verify=Depends(verify_token_by_update_password),
 ):
-    # TODO: implement
+    await _auth_service.update_password(auth_host, user_id, update_password_vo)
     return res_success(msg='update success')
 
 
@@ -70,8 +80,8 @@ async def update_password(
 async def send_reset_password_comfirm_email(
     email: EmailStr,
 ):
-    # TODO: implement
-    return res_success(msg='msg')
+    msg = await _auth_service.send_reset_password_comfirm_email(auth_host, email)
+    return res_success(msg=msg)
 
 
 @router.put('/password/reset')
@@ -79,5 +89,5 @@ async def reset_password(
     reset_passwrod_dto: ResetPasswordDTO = Body(...),
     verify_token: str = Query(...),
 ):
-    # TODO: implement
+    await _auth_service.reset_passwrod(auth_host, verify_token, reset_passwrod_vo)
     return res_success(msg='reset success')
