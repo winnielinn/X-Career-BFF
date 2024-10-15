@@ -1,4 +1,4 @@
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Tuple
 from ....router.req.authorization import (
     gen_token, 
     gen_refresh_token, 
@@ -29,12 +29,13 @@ class AuthService:
 
     async def signup(self, host: str, body: SignupDTO):
         email = body.email
-        self.__cache_check_for_duplicates(email)
+        self.__cache_check_for_frequency(email)
 
         code = gen_confirm_code()
-        status_code = self.__req_send_confirmcode_by_email(
+        auth_res, msg, status_code, err = self.__req_send_confirmcode_by_email(
             host, email, code)
 
+        self.cache.set(email, {'avoid_freq_email_req_and_hit_db': 1}, SHORT_TERM_TTL)
         if status_code <= 200:
             self.__cache_confirmcode(email, body.password, code)
 
@@ -43,32 +44,30 @@ class AuthService:
                 'for_testing_only': code
             }
 
-        else:
-            self.cache.set(email, {'avoid_freq_email_req_and_hit_db': 1}, SHORT_TERM_TTL)
-            raise DuplicateUserException(msg='email_registered')
+        raise_http_exception(e=err, msg=msg)
 
-    def __cache_check_for_duplicates(self, email: str):
+    def __cache_check_for_frequency(self, email: str):
         data = self.cache.get(email)
         if data:
-            log.error(f'{self.__cls_name}.__cache_check_for_duplicates:[business error],\
+            log.error(f'{self.__cls_name}.__cache_check_for_frequency:[frequently request],\
                 email:%s, cache data:%s', email, data)
-            raise DuplicateUserException(msg='registered or registering')
+            raise TooManyRequestsException(msg='frequently request')
 
+
+    # return status_code, msg, err
     def __req_send_confirmcode_by_email(self, host: str, email: str, code: str):
         auth_res, msg, status_code, err = self.req.post_with_statuscode(f'{host}/sendcode/email', json={
             'email': email,
             'code': code,
             'exist': False,
         })
-        log.info(f'__req_send_confirmcode_by_email auth_res: %s, msg: %s, status_code: %d, err: %s', auth_res, msg, status_code, err)
         
-        if status_code >= 400 or msg or err:
+        if status_code >= 400 or err:
             log.error(f'{self.__cls_name}.__req_send_confirmcode_by_email:[request exception], \
                 host:%s, email:%s, code:%s, auth_res:%s, msg:%s, status_code:%s, err:%s',
                 host, email, code, auth_res, msg, status_code, err)
-            self.cache.set(email, {'avoid_freq_email_req_and_hit_db': 1}, SHORT_TERM_TTL)
 
-        return status_code
+        return auth_res, msg, status_code, err
 
     def __cache_confirmcode(self, email: EmailStr, password: str, code: str):
         # TODO: region 記錄在???
