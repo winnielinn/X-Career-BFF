@@ -1,7 +1,11 @@
 import boto3
-import logging as log
+from .conf import AWS_PROFILE
+import logging
 
-log.basicConfig(filemode='w', level=log.INFO)
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
 
 
-dynamodb = boto3.resource('dynamodb')
+
+session = boto3.Session(profile_name=AWS_PROFILE)  # 指定所需的帳號
+dynamodb = session.resource('dynamodb')

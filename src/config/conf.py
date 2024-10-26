@@ -1,6 +1,9 @@
 import os
 import json
 
+AWS_PROFILE = os.getenv('AWS_PROFILE', 'default') # xc default
+STAGE = os.getenv('STAGE', 'dev')
+TESTING = os.getenv('TESTING', 'dev')
 
 XC_BUCKET = os.getenv('XC_BUCKET', 'x-career')
 

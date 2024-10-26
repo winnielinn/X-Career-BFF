@@ -29,45 +29,51 @@ class AuthService:
 
     async def signup(self, host: str, body: SignupDTO):
         email = body.email
-        self.__cache_check_for_frequency(email)
+        self.__cache_check_for_signup(email)
+        auth_res = self.__req_send_signup_confirm_email(host, email)
+        if not 'token' in auth_res:
+            raise ServerException(msg='signup fail')
 
-        code = gen_confirm_code()
-        auth_res, msg, status_code, err = self.__req_send_confirmcode_by_email(
-            host, email, code)
+        token = auth_res['token']
+        self.__cache_signup_token(email, body.password, token)
+        return {'token': token} if STAGE == TESTING else {}
 
-        self.cache.set(email, {'avoid_freq_email_req_and_hit_db': 1}, SHORT_TERM_TTL)
-        if status_code <= 200:
-            self.__cache_confirmcode(email, body.password, code)
 
-            # FIXME: remove the res here('code') during production
-            return {
-                'for_testing_only': code
-            }
-
-        raise_http_exception(e=err, msg=msg)
-
-    def __cache_check_for_frequency(self, email: str):
-        data = self.cache.get(email)
+    def __cache_check_for_signup(self, email: str):
+        data = self.cache.get(f'signup:{email}')
         if data:
-            log.error(f'{self.__cls_name}.__cache_check_for_frequency:[frequently request],\
+            log.error(f'{self.__cls_name}.__cache_check_for_signup:[frequently request],\
                 email:%s, cache data:%s', email, data)
             raise TooManyRequestsException(msg='frequently request')
+        
 
+    # return status_code, msg, err
+    def __req_send_signup_confirm_email(self, host: str, email: str):
+        auth_res = self.req.simple_post(f'{host}/signup/email', json={
+            'email': email,
+            'exist': False,
+        })
+
+        return auth_res
+
+    def __cache_signup_token(self, email: EmailStr, password: str, token: str):
+        # TODO: region 記錄在???
+        email_playload = {
+            'email': email,
+            'password': password,
+            'token': token,
+        }
+        self.cache.set(f'signup:{email}', email_playload, ex=SHORT_TERM_TTL)
 
     # return status_code, msg, err
     def __req_send_confirmcode_by_email(self, host: str, email: str, code: str):
-        auth_res, msg, status_code, err = self.req.post_with_statuscode(f'{host}/sendcode/email', json={
+        auth_res = self.req.simple_post(f'{host}/sendcode/email', json={
             'email': email,
             'code': code,
             'exist': False,
         })
-        
-        if status_code >= 400 or err:
-            log.error(f'{self.__cls_name}.__req_send_confirmcode_by_email:[request exception], \
-                host:%s, email:%s, code:%s, auth_res:%s, msg:%s, status_code:%s, err:%s',
-                host, email, code, auth_res, msg, status_code, err)
 
-        return auth_res, msg, status_code, err
+        return auth_res
 
     def __cache_confirmcode(self, email: EmailStr, password: str, code: str):
         # TODO: region 記錄在???
@@ -321,18 +327,18 @@ class AuthService:
 
     
     def __cache_check_for_reset_password(self, email: EmailStr):
-        data = self.cache.get(f'{email}:reset_pw')
+        data = self.cache.get(f'reset_pw:{email}')
         if data:
             log.error(f'{self.__cls_name}.__cache_check_for_reset_password:[too many reqeusts error],\
                 email:%s, cache data:%s', email, data)
             raise TooManyRequestsException(msg='frequent_requests')
     
     def __cache_token_by_reset_password(self, verify_token: str, email: EmailStr):
-        self.cache.set(f'{email}:reset_pw', '1', REQUEST_INTERVAL_TTL)
+        self.cache.set(f'reset_pw:{email}', '1', REQUEST_INTERVAL_TTL)
         self.cache.set(verify_token, email, SHORT_TERM_TTL)
         
     def __cache_remove_by_reset_password(self, verify_token: str, email: EmailStr):
-        self.cache.delete(f'{email}:reset_pw')
+        self.cache.delete(f'reset_pw:{email}')
         self.cache.delete(verify_token)
         
 
