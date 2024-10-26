@@ -29,16 +29,16 @@ class SignupDTO(BaseModel):
 
 
 class SignupConfirmDTO(BaseModel):
-    region: Optional[str]
+    region: Optional[str] = 'jp'
     email: EmailStr
-    code: str
+    token: str
 
     class Config:
         schema_extra = {
             'example': {
-                'region': 'us-west-2',
+                'region': 'ap-northeast-1',
                 'email': 'user@example.com',
-                'code': '106E7B',
+                'token': '1e3162f7-77b6-4ea4-b8b1-8f9439ac3789',
             },
         }
 

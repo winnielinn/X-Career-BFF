@@ -1,9 +1,9 @@
 import os
 import json
 
-AWS_PROFILE = os.getenv('AWS_PROFILE', 'default') # xc default
-STAGE = os.getenv('STAGE', 'dev')
-TESTING = os.getenv('TESTING', 'dev')
+AWS_PROFILE = os.getenv('AWS_PROFILE', 'xc') # xc default
+STAGE = os.getenv('STAGE', 'local')
+TESTING = os.getenv('TESTING', 'local')
 
 XC_BUCKET = os.getenv('XC_BUCKET', 'x-career')
 
@@ -17,7 +17,7 @@ BATCH = int(os.getenv('BATCH', '10'))
 # default = 20 secs
 REQUEST_INTERVAL_TTL = int(os.getenv('REQUEST_INTERVAL_TTL', 20))
 # TODO: default = 5 mins (300 secs)
-SHORT_TERM_TTL = int(os.getenv('SHORT_TERM_TTL', 20))
+SHORT_TERM_TTL = int(os.getenv('SHORT_TERM_TTL', 3))
 # default = 3 days (3 * 86400 secs)
 LONG_TERM_TTL = int(os.getenv('LONG_TERM_TTL', 3 * 86400))
 

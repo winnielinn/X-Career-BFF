@@ -40,7 +40,7 @@ class AuthService:
 
 
     def __cache_check_for_signup(self, email: str):
-        data = self.cache.get(f'signup:{email}')
+        data = self.cache.get(email)
         if data:
             log.error(f'{self.__cls_name}.__cache_check_for_signup:[frequently request],\
                 email:%s, cache data:%s', email, data)
@@ -63,7 +63,7 @@ class AuthService:
             'password': password,
             'token': token,
         }
-        self.cache.set(f'signup:{email}', email_playload, ex=SHORT_TERM_TTL)
+        self.cache.set(email, email_playload, ex=SHORT_TERM_TTL)
 
     # return status_code, msg, err
     def __req_send_confirmcode_by_email(self, host: str, email: str, code: str):
@@ -90,10 +90,10 @@ class AuthService:
 
     async def confirm_signup(self, host: str, body: SignupConfirmDTO):
         email = body.email
-        code = body.code
-        # user: {email, passowrd, code}
+        token = body.token
+        # user: {email, passowrd, token}
         user = self.cache.get(email)
-        self.__verify_confirmcode(code, user)
+        self.__verify_confirm_token(token, user)
 
         # 'registering': empty data, but TTL=30sec
         self.cache.set(email, {}, ex=30)
@@ -108,6 +108,17 @@ class AuthService:
         self.cache_auth_res(user_id_key, auth_res)
         auth_res = self.apply_token(auth_res)
         return {'auth': auth_res}
+    
+    def __verify_confirm_token(self, token: str, user: Any):
+        if not user or not 'token' in user:
+            raise NotFoundException(msg='no signup data')
+
+        if user == {}:
+            raise DuplicateUserException(msg='registering')
+
+        if token != str(user['token']):
+            raise ClientException(msg='wrong_confirm_token')
+
 
     def __verify_confirmcode(self, code: str, user: Any):
         if not user or not 'code' in user:
