@@ -26,22 +26,22 @@ package:
 provider:
   name: aws
   runtime: python3.9
-  region: ${opt:region, "ap-northeast-1"}
-  stage: ${opt:stage, "dev"}
+  region: ${env:THE_REGION} # ${opt:region, "ap-northeast-1"}
+  stage: ${env:STAGE} # ${opt:stage, "dev"}
   timeout: 30
   iamRoleStatements:
   - Effect: Allow
     Action:
     - lambda:*
     Resource:
-    - arn:aws:lambda:ap-northeast-1:991681440467:layer:*
-    - arn:aws:lambda:ap-northeast-1:991681440467:function:*
+    # - arn:aws:lambda:${env:THE_REGION}:${env:ACCOUNT_ID}:layer:*
+    - arn:aws:lambda:${env:THE_REGION}:${env:ACCOUNT_ID}:function:*
 
   - Effect: Allow
     Action:
     - dynamodb:*
     Resource:
-    - arn:aws:dynamodb:ap-northeast-1:991681440467:table/cache
+    - arn:aws:dynamodb:${env:THE_REGION}:${env:ACCOUNT_ID}:table/${env:TABLE_CACHE}
 
 # you can add statements to the Lambda function's IAM Role here
 #  iam:
