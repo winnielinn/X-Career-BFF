@@ -37,7 +37,7 @@ async def signup(
     body: SignupDTO = Body(...),
 ):
     data = await _auth_service.signup(auth_host, body)
-    return res_success(data=data, msg='email_sent')
+    return post_success(data=data, msg='email_sent')
 
 
 @router.post('/signup/confirm',
@@ -47,7 +47,7 @@ async def confirm_signup(
     body: SignupConfirmDTO = Body(...),
 ):
     data = await _auth_service.confirm_signup(auth_host, body)
-    return res_success(data=data)
+    return post_success(data=data)
 
 
 @router.post('/login',
@@ -57,7 +57,7 @@ async def login(
     body: LoginDTO = Depends(login_check_body),
 ):
     data = await _auth_service.login(auth_host, user_host, body)
-    return res_success(data=data)
+    return post_success(data=data)
 
 
 @router.post('/token',
@@ -66,7 +66,7 @@ async def refresh_token(
     body: NewTokenDTO = Body(...),
 ):
     data = await _auth_service.get_new_token_pair(body)
-    return res_success(data=data)
+    return post_success(data=data)
 
 
 @router.post('/logout', status_code=201)
@@ -74,7 +74,7 @@ async def logout(
     user_id: int = Body(..., embed=True),
 ):
     data, msg = await _auth_service.logout(user_id)
-    return res_success(data=data, msg=msg)
+    return post_success(data=data, msg=msg)
 
 
 @router.put('/password/{user_id}/update')

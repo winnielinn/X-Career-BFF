@@ -40,11 +40,11 @@ class AuthService:
 
 
     def __cache_check_for_signup(self, email: str):
-        data = self.cache.get(email)
+        data = self.cache.get(email, True)
         if data and data.get('ttl', 0) > current_seconds():
-            log.error(f'{self.__cls_name}.__cache_check_for_signup:[frequently request],\
+            log.error(f'{self.__cls_name}.__cache_check_for_signup:[too many reqeusts error],\
                 email:%s, cache data:%s', email, data)
-            raise TooManyRequestsException(msg='frequently request')
+            raise TooManyRequestsException(msg='frequently request', data={'ttl_secs': REQUEST_INTERVAL_TTL})
         
         if data:
             self.cache.delete(email)
@@ -52,12 +52,17 @@ class AuthService:
 
     # return status_code, msg, err
     def __req_send_signup_confirm_email(self, host: str, email: str):
-        auth_res = self.req.simple_post(f'{host}/signup/email', json={
-            'email': email,
-            'exist': False,
-        })
+        try:
+            auth_res = self.req.simple_post(f'{host}/signup/email', json={
+                'email': email,
+                'exist': False,
+            })
+            return auth_res
 
-        return auth_res
+        except NotAcceptableException or DuplicateUserException as e:
+            self.cache.set(email, {}, ex=REQUEST_INTERVAL_TTL)
+            raise DuplicateUserException(msg='Email registered')
+
 
     def __cache_signup_token(self, email: EmailStr, password: str, token: str):
         # TODO: region 記錄在???
@@ -66,7 +71,7 @@ class AuthService:
             'password': password,
             'token': token,
         }
-        self.cache.set(email, email_playload, ex=SHORT_TERM_TTL)
+        self.cache.set(email, email_playload, ex=REQUEST_INTERVAL_TTL)
 
     # return status_code, msg, err
     def __req_send_confirmcode_by_email(self, host: str, email: str, code: str):
@@ -85,7 +90,7 @@ class AuthService:
             'password': password,
             'code': code,
         }
-        self.cache.set(email, email_playload, ex=SHORT_TERM_TTL)
+        self.cache.set(email, email_playload, ex=REQUEST_INTERVAL_TTL)
 
     '''
     confirm_signup
@@ -98,8 +103,8 @@ class AuthService:
         user = self.cache.get(email)
         self.__verify_confirm_token(token, user)
 
-        # 'registering': empty data, but TTL=30sec
-        self.cache.set(email, {}, ex=30)
+        # 'registering': empty data
+        self.cache.set(email, {}, ex=REQUEST_INTERVAL_TTL)
         auth_res = self.req.simple_post(f'{host}/signup',
                                         json={
                                             'region': body.region,
@@ -340,15 +345,22 @@ class AuthService:
 
     
     def __cache_check_for_reset_password(self, email: EmailStr):
-        data = self.cache.get(f'reset_pw:{email}')
-        if data:
+        data = self.cache.get(f'reset_pw:{email}', True)
+        if data and data.get('ttl', 0) > current_seconds():
             log.error(f'{self.__cls_name}.__cache_check_for_reset_password:[too many reqeusts error],\
                 email:%s, cache data:%s', email, data)
-            raise TooManyRequestsException(msg='frequent_requests')
-    
+            raise TooManyRequestsException(msg='frequently request', data={'ttl_secs': REQUEST_INTERVAL_TTL})
+        
+        if data:
+            self.cache.delete(f'reset_pw:{email}')
+            # 將用不到的 verify_token 刪除
+            verify_token = data.get('token', None)
+            self.cache.delete(verify_token)
+
+
     def __cache_token_by_reset_password(self, verify_token: str, email: EmailStr):
-        self.cache.set(f'reset_pw:{email}', '1', REQUEST_INTERVAL_TTL)
-        self.cache.set(verify_token, email, SHORT_TERM_TTL)
+        self.cache.set(f'reset_pw:{email}', {'token':verify_token}, REQUEST_INTERVAL_TTL)
+        self.cache.set(verify_token, email, REQUEST_INTERVAL_TTL)
         
     def __cache_remove_by_reset_password(self, verify_token: str, email: EmailStr):
         self.cache.delete(f'reset_pw:{email}')
