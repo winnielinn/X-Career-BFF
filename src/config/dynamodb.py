@@ -1,7 +1,13 @@
 import boto3
-import logging as log
+from .conf import TESTING, AWS_PROFILE
+import logging
 
-log.basicConfig(filemode='w', level=log.INFO)
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
 
 
-dynamodb = boto3.resource('dynamodb')
+if TESTING == 'local':
+    session = boto3.Session(profile_name=AWS_PROFILE)
+else:
+    session = boto3.Session()
+dynamodb = session.resource('dynamodb')

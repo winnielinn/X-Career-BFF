@@ -8,7 +8,7 @@ from ..model.auth_model import *
 from ...cache import ICache
 from ...service_api import IServiceApi
 from ....infra.util.util import gen_confirm_code
-from ....infra.util.time_util import gen_timestamp
+from ....infra.util.time_util import gen_timestamp, current_seconds
 from ....config.conf import *
 from ....config.constant import PREFETCH
 from ....config.exception import *
@@ -23,51 +23,60 @@ class AuthService:
         self.req = req
         self.cache = cache
 
+
     '''
     signup
     '''
-
     async def signup(self, host: str, body: SignupDTO):
         email = body.email
-        self.__cache_check_for_frequency(email)
+        self.__cache_check_for_signup(email)
+        auth_res = self.__req_send_signup_confirm_email(host, email)
+        if not 'token' in auth_res:
+            raise ServerException(msg='signup fail')
 
-        code = gen_confirm_code()
-        auth_res, msg, status_code, err = self.__req_send_confirmcode_by_email(
-            host, email, code)
+        token = auth_res['token']
+        self.__cache_signup_token(email, body.password, token)
+        return {'token': token} if STAGE == TESTING else {}
 
-        self.cache.set(email, {'avoid_freq_email_req_and_hit_db': 1}, SHORT_TERM_TTL)
-        if status_code <= 200:
-            self.__cache_confirmcode(email, body.password, code)
 
-            # FIXME: remove the res here('code') during production
-            return {
-                'for_testing_only': code
-            }
-
-        raise_http_exception(e=err, msg=msg)
-
-    def __cache_check_for_frequency(self, email: str):
+    def __cache_check_for_signup(self, email: str):
         data = self.cache.get(email)
-        if data:
-            log.error(f'{self.__cls_name}.__cache_check_for_frequency:[frequently request],\
+        if data and data.get('ttl', 0) > current_seconds():
+            log.error(f'{self.__cls_name}.__cache_check_for_signup:[frequently request],\
                 email:%s, cache data:%s', email, data)
             raise TooManyRequestsException(msg='frequently request')
+        
+        if data:
+            self.cache.delete(email)
 
 
     # return status_code, msg, err
+    def __req_send_signup_confirm_email(self, host: str, email: str):
+        auth_res = self.req.simple_post(f'{host}/signup/email', json={
+            'email': email,
+            'exist': False,
+        })
+
+        return auth_res
+
+    def __cache_signup_token(self, email: EmailStr, password: str, token: str):
+        # TODO: region 記錄在???
+        email_playload = {
+            'email': email,
+            'password': password,
+            'token': token,
+        }
+        self.cache.set(email, email_playload, ex=SHORT_TERM_TTL)
+
+    # return status_code, msg, err
     def __req_send_confirmcode_by_email(self, host: str, email: str, code: str):
-        auth_res, msg, status_code, err = self.req.post_with_statuscode(f'{host}/sendcode/email', json={
+        auth_res = self.req.simple_post(f'{host}/sendcode/email', json={
             'email': email,
             'code': code,
             'exist': False,
         })
-        
-        if status_code >= 400 or err:
-            log.error(f'{self.__cls_name}.__req_send_confirmcode_by_email:[request exception], \
-                host:%s, email:%s, code:%s, auth_res:%s, msg:%s, status_code:%s, err:%s',
-                host, email, code, auth_res, msg, status_code, err)
 
-        return auth_res, msg, status_code, err
+        return auth_res
 
     def __cache_confirmcode(self, email: EmailStr, password: str, code: str):
         # TODO: region 記錄在???
@@ -84,10 +93,10 @@ class AuthService:
 
     async def confirm_signup(self, host: str, body: SignupConfirmDTO):
         email = body.email
-        code = body.code
-        # user: {email, passowrd, code}
+        token = body.token
+        # user: {email, passowrd, token}
         user = self.cache.get(email)
-        self.__verify_confirmcode(code, user)
+        self.__verify_confirm_token(token, user)
 
         # 'registering': empty data, but TTL=30sec
         self.cache.set(email, {}, ex=30)
@@ -102,6 +111,17 @@ class AuthService:
         self.cache_auth_res(user_id_key, auth_res)
         auth_res = self.apply_token(auth_res)
         return {'auth': auth_res}
+    
+    def __verify_confirm_token(self, token: str, user: Any):
+        if not user or not 'token' in user:
+            raise NotFoundException(msg='no signup data')
+
+        if user == {}:
+            raise DuplicateUserException(msg='registering')
+
+        if token != str(user['token']):
+            raise ClientException(msg='wrong_confirm_token')
+
 
     def __verify_confirmcode(self, code: str, user: Any):
         if not user or not 'code' in user:
@@ -307,8 +327,7 @@ class AuthService:
             token = email + ':not_exist'
         
         self.__cache_token_by_reset_password(token, email)
-        #TEST: log
-        return f'''send_email_success {token}'''
+        return f'send_email_success {token}' if STAGE == TESTING else f'send_email_success'
 
     async def reset_passwrod(self, auth_host: str, verify_token: str, body: ResetPasswordDTO):
         checked_email = self.cache.get(verify_token)
@@ -321,18 +340,18 @@ class AuthService:
 
     
     def __cache_check_for_reset_password(self, email: EmailStr):
-        data = self.cache.get(f'{email}:reset_pw')
+        data = self.cache.get(f'reset_pw:{email}')
         if data:
             log.error(f'{self.__cls_name}.__cache_check_for_reset_password:[too many reqeusts error],\
                 email:%s, cache data:%s', email, data)
             raise TooManyRequestsException(msg='frequent_requests')
     
     def __cache_token_by_reset_password(self, verify_token: str, email: EmailStr):
-        self.cache.set(f'{email}:reset_pw', '1', REQUEST_INTERVAL_TTL)
+        self.cache.set(f'reset_pw:{email}', '1', REQUEST_INTERVAL_TTL)
         self.cache.set(verify_token, email, SHORT_TERM_TTL)
         
     def __cache_remove_by_reset_password(self, verify_token: str, email: EmailStr):
-        self.cache.delete(f'{email}:reset_pw')
+        self.cache.delete(f'reset_pw:{email}')
         self.cache.delete(verify_token)
         
 

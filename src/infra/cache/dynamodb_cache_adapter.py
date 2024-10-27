@@ -7,6 +7,7 @@ from ...domain.cache import ICache
 from ...config.dynamodb import dynamodb
 from ...config.conf import TABLE_CACHE
 from ...config.exception import ServerException
+from ...infra.util.time_util import gen_ttl_secs
 import logging as log
 
 log.basicConfig(filemode='w', level=log.INFO)
@@ -30,6 +31,8 @@ class DynamoDbCacheAdapter(ICache):
             if 'Item' in res and 'value' in res['Item']:
                 val = res['Item']['value']
                 result = json.loads(val) if self.is_json_obj(val) else val
+                if 'ttl' in res['Item']:
+                    result.update({'ttl': res['Item']['ttl']})
 
             return result
 
@@ -54,8 +57,7 @@ class DynamoDbCacheAdapter(ICache):
                 'value': val,
             }
             if ex:
-                ttl = datetime.now() + timedelta(seconds=ex)
-                ttl = int(ttl.timestamp())
+                ttl = gen_ttl_secs(seconds=ex)
                 item.update({'ttl': ttl})
 
             res = table.put_item(Item=item)
