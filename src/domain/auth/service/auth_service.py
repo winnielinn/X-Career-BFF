@@ -8,7 +8,7 @@ from ..model.auth_model import *
 from ...cache import ICache
 from ...service_api import IServiceApi
 from ....infra.util.util import gen_confirm_code
-from ....infra.util.time_util import gen_timestamp
+from ....infra.util.time_util import gen_timestamp, current_seconds
 from ....config.conf import *
 from ....config.constant import PREFETCH
 from ....config.exception import *
@@ -23,10 +23,10 @@ class AuthService:
         self.req = req
         self.cache = cache
 
+
     '''
     signup
     '''
-
     async def signup(self, host: str, body: SignupDTO):
         email = body.email
         self.__cache_check_for_signup(email)
@@ -41,11 +41,14 @@ class AuthService:
 
     def __cache_check_for_signup(self, email: str):
         data = self.cache.get(email)
-        if data:
+        if data and data.get('ttl', 0) > current_seconds():
             log.error(f'{self.__cls_name}.__cache_check_for_signup:[frequently request],\
                 email:%s, cache data:%s', email, data)
             raise TooManyRequestsException(msg='frequently request')
         
+        if data:
+            self.cache.delete(email)
+
 
     # return status_code, msg, err
     def __req_send_signup_confirm_email(self, host: str, email: str):
