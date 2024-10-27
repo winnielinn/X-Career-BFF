@@ -324,8 +324,7 @@ class AuthService:
             token = email + ':not_exist'
         
         self.__cache_token_by_reset_password(token, email)
-        #TEST: log
-        return f'''send_email_success {token}'''
+        return f'send_email_success {token}' if STAGE == TESTING else f'send_email_success'
 
     async def reset_passwrod(self, auth_host: str, verify_token: str, body: ResetPasswordDTO):
         checked_email = self.cache.get(verify_token)
