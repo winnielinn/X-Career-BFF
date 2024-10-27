@@ -24,7 +24,7 @@ LONG_TERM_TTL = int(os.getenv('LONG_TERM_TTL', 3 * 86400))
 
 # cache
 # dynamodb
-TABLE_CACHE = os.getenv('TABLE_CACHE', 'cache')
+TABLE_CACHE = os.getenv('TABLE_CACHE', 'dev_x_career_bff_cache')
 # redis
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.getenv('REDIS_PORT', '6379'))
