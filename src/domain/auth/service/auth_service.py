@@ -355,7 +355,8 @@ class AuthService:
             self.cache.delete(f'reset_pw:{email}')
             # 將用不到的 verify_token 刪除
             verify_token = data.get('token', None)
-            self.cache.delete(verify_token)
+            if verify_token:
+                self.cache.delete(verify_token)
 
 
     def __cache_token_by_reset_password(self, verify_token: str, email: EmailStr):
