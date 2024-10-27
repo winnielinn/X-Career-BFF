@@ -40,7 +40,7 @@ class AuthService:
 
 
     def __cache_check_for_signup(self, email: str):
-        data = self.cache.get(email)
+        data = self.cache.get(email, True)
         if data and data.get('ttl', 0) > current_seconds():
             log.error(f'{self.__cls_name}.__cache_check_for_signup:[too many reqeusts error],\
                 email:%s, cache data:%s', email, data)
@@ -345,7 +345,7 @@ class AuthService:
 
     
     def __cache_check_for_reset_password(self, email: EmailStr):
-        data = self.cache.get(f'reset_pw:{email}')
+        data = self.cache.get(f'reset_pw:{email}', True)
         if data and data.get('ttl', 0) > current_seconds():
             log.error(f'{self.__cls_name}.__cache_check_for_reset_password:[too many reqeusts error],\
                 email:%s, cache data:%s', email, data)
@@ -353,9 +353,13 @@ class AuthService:
         
         if data:
             self.cache.delete(f'reset_pw:{email}')
-    
+            # 將用不到的 verify_token 刪除
+            verify_token = data.get('token', None)
+            self.cache.delete(verify_token)
+
+
     def __cache_token_by_reset_password(self, verify_token: str, email: EmailStr):
-        self.cache.set(f'reset_pw:{email}', '1', REQUEST_INTERVAL_TTL)
+        self.cache.set(f'reset_pw:{email}', {'token':verify_token}, REQUEST_INTERVAL_TTL)
         self.cache.set(verify_token, email, REQUEST_INTERVAL_TTL)
         
     def __cache_remove_by_reset_password(self, verify_token: str, email: EmailStr):

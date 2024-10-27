@@ -17,12 +17,12 @@ class DynamoDbCacheAdapter(ICache):
     def __init__(self, dynamodb: Any):
         self.db = dynamodb
         self.__cls_name = self.__class__.__name__
-        
+
     def is_json_obj(self, val: Any) -> (bool):
         return (val[0] == '{' and val[-1] == '}') or \
             (val[0] == '[' and val[-1] == ']')
 
-    def get(self, key: str):
+    def get(self, key: str, with_ttl: bool = False):
         res = None
         result = None
         try:
@@ -30,9 +30,12 @@ class DynamoDbCacheAdapter(ICache):
             res = table.get_item(Key={'cache_key': key})
             if 'Item' in res and 'value' in res['Item']:
                 val = res['Item']['value']
-                result = json.loads(val) if self.is_json_obj(val) else val
-                if 'ttl' in res['Item']:
-                    result.update({'ttl': res['Item']['ttl']})
+                if self.is_json_obj(val):
+                    result = json.loads(val)
+                    if with_ttl and 'ttl' in res['Item']:
+                        result.update({'ttl': res['Item']['ttl']})
+                else:
+                    result = val
 
             return result
 
@@ -41,7 +44,6 @@ class DynamoDbCacheAdapter(ICache):
                 key:%s, res:%s, result:%s, err:%s',
                       key, res, result, e.__str__())
             raise ServerException(msg='d2_server_error')
-
 
     def set(self, key: str, val: Any, ex: int = None):
         res = None
@@ -84,22 +86,23 @@ class DynamoDbCacheAdapter(ICache):
         values = self.get(key)
         if values is None:
             return None
-        
+
         if not isinstance(values, list):
             raise ServerException(msg='invalid set-members type')
-        
+
         return set(values)
 
     def sismember(self, key: str, value: Any) -> (bool):
         set_members = self.smembers(key)
         if set_members is None:
             return False
-        
+
         return value in set_members
 
     def sadd(self, key: str, values: List[Any], ex: int = None) -> (int):
         if not isinstance(values, list):
-            raise ServerException(msg='invalid input type, values should be list')
+            raise ServerException(
+                msg='invalid input type, values should be list')
 
         set_values = set(values)
 
@@ -111,7 +114,7 @@ class DynamoDbCacheAdapter(ICache):
         else:
             new_set_members = set_members | set_values
             self.set(key, list(new_set_members), ex)
-            
+
         update_count = len(values)
         return update_count
 
@@ -129,8 +132,6 @@ class DynamoDbCacheAdapter(ICache):
             update_count = 0
 
         return update_count
-
-
 
 
 def get_cache():
