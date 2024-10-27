@@ -14,10 +14,10 @@ TOKEN_EXPIRE_TIME = int(os.getenv('TOKEN_EXPIRE_TIME', 30))
 
 BATCH = int(os.getenv('BATCH', '10'))
 
-# default = 20 secs
-REQUEST_INTERVAL_TTL = int(os.getenv('REQUEST_INTERVAL_TTL', 20))
-# TODO: default = 5 mins (300 secs)
-SHORT_TERM_TTL = int(os.getenv('SHORT_TERM_TTL', 3))
+# default = 8 secs
+REQUEST_INTERVAL_TTL = int(os.getenv('REQUEST_INTERVAL_TTL', 8))
+# TODO: default = 30 mins (1800 secs)
+SHORT_TERM_TTL = int(os.getenv('SHORT_TERM_TTL', 1800))
 # default = 3 days (3 * 86400 secs)
 LONG_TERM_TTL = int(os.getenv('LONG_TERM_TTL', 3 * 86400))
 
