@@ -63,6 +63,14 @@ class AuthService:
             self.cache.set(email, {}, ex=REQUEST_INTERVAL_TTL)
             raise DuplicateUserException(msg='Email registered')
 
+        except Exception as e:
+            log.error(f'{self.__cls_name}.__req_send_signup_confirm_email:[request exception], \
+                host:%s, email:%s, error:%s', host, email, e)
+            # ttl = 10 secs
+            self.cache.set(email, {}, ex=10)
+            raise_http_exception(e, 'email_could_not_be_delivered')
+            
+
 
     def __cache_signup_token(self, email: EmailStr, password: str, token: str):
         # TODO: region 記錄在???
