@@ -131,26 +131,26 @@ def include_app(app: FastAPI):
     app.add_exception_handler(TooManyRequestsException, __too_many_requests_exception_handler)
     app.add_exception_handler(ServerException, __server_exception_handler)
 
-def raise_http_exception(e: Exception, msg: str = None):
+def raise_http_exception(e: Exception, msg: str = None, data: Any = None):
     if isinstance(e, ClientException):
-        raise ClientException(msg=msg or e.msg, data=e.data)
+        raise ClientException(msg=msg or e.msg, data=data or e.data)
     
     if isinstance(e, UnauthorizedException):
-        raise UnauthorizedException(msg=msg or e.msg, data=e.data)
+        raise UnauthorizedException(msg=msg or e.msg, data=data or e.data)
     
     if isinstance(e, ForbiddenException):
-        raise ForbiddenException(msg=msg or e.msg, data=e.data)
+        raise ForbiddenException(msg=msg or e.msg, data=data or e.data)
         
     if isinstance(e, NotFoundException):
-        raise NotFoundException(msg=msg or e.msg, data=e.data)
+        raise NotFoundException(msg=msg or e.msg, data=data or e.data)
     
     if isinstance(e, NotAcceptableException):
-        raise NotAcceptableException(msg=msg or e.msg, data=e.data)
+        raise NotAcceptableException(msg=msg or e.msg, data=data or e.data)
     
     if isinstance(e, DuplicateUserException):
-        raise DuplicateUserException(msg=msg or e.msg, data=e.data)
+        raise DuplicateUserException(msg=msg or e.msg, data=data or e.data)
     
     if isinstance(e, ServerException):
-        raise ServerException(msg=msg or e.msg, data=e.data)
+        raise ServerException(msg=msg or e.msg, data=data or e.data)
     
     raise ServerException(msg=msg)

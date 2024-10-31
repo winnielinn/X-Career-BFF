@@ -91,8 +91,8 @@ async def update_password(
 async def send_reset_password_comfirm_email(
     email: EmailStr,
 ):
-    msg = await _auth_service.send_reset_password_comfirm_email(auth_host, email)
-    return res_success(msg=msg)
+    data = await _auth_service.send_reset_password_comfirm_email(auth_host, email)
+    return res_success(data=data, msg='send_email_success')
 
 
 @router.put('/password/reset')

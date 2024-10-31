@@ -22,6 +22,7 @@ class AuthService:
         self.__cls_name = self.__class__.__name__
         self.req = req
         self.cache = cache
+        self.ttl_secs = {'ttl_secs': REQUEST_INTERVAL_TTL}
 
 
     '''
@@ -32,11 +33,14 @@ class AuthService:
         self.__cache_check_for_signup(email)
         auth_res = self.__req_send_signup_confirm_email(host, email)
         if not 'token' in auth_res:
-            raise ServerException(msg='signup fail')
+            raise ServerException(msg='signup fail', data=self.ttl_secs)
 
         token = auth_res['token']
         self.__cache_signup_token(email, body.password, token)
-        return {'token': token} if STAGE == TESTING else {}
+        data = self.ttl_secs.copy()
+        if STAGE == TESTING:
+            data.update({'token': token})
+        return data
 
 
     def __cache_check_for_signup(self, email: str):
@@ -44,7 +48,7 @@ class AuthService:
         if data and data.get('ttl', 0) > current_seconds():
             log.error(f'{self.__cls_name}.__cache_check_for_signup:[too many reqeusts error],\
                 email:%s, cache data:%s', email, data)
-            raise TooManyRequestsException(msg='frequently request', data={'ttl_secs': REQUEST_INTERVAL_TTL})
+            raise TooManyRequestsException(msg='frequently request', data=self.ttl_secs)
         
         if data:
             self.cache.delete(email)
@@ -61,14 +65,14 @@ class AuthService:
 
         except NotAcceptableException or DuplicateUserException as e:
             self.cache.set(email, {}, ex=REQUEST_INTERVAL_TTL)
-            raise DuplicateUserException(msg='Email registered')
+            raise DuplicateUserException(msg='Email registered', data=self.ttl_secs)
 
         except Exception as e:
             log.error(f'{self.__cls_name}.__req_send_signup_confirm_email:[request exception], \
                 host:%s, email:%s, error:%s', host, email, e)
             # ttl = 10 secs
             self.cache.set(email, {}, ex=10)
-            raise_http_exception(e, 'email_could_not_be_delivered')
+            raise_http_exception(e, 'email_could_not_be_delivered', data=self.ttl_secs)
             
 
 
@@ -340,7 +344,10 @@ class AuthService:
             token = email + ':not_exist'
         
         self.__cache_token_by_reset_password(token, email)
-        return f'send_email_success {token}' if STAGE == TESTING else f'send_email_success'
+        data = self.ttl_secs.copy()
+        if STAGE == TESTING:
+            data.update({'token': token})
+        return data
 
     async def reset_passwrod(self, auth_host: str, verify_token: str, body: ResetPasswordDTO):
         checked_email = self.cache.get(verify_token)
@@ -357,7 +364,7 @@ class AuthService:
         if data and data.get('ttl', 0) > current_seconds():
             log.error(f'{self.__cls_name}.__cache_check_for_reset_password:[too many reqeusts error],\
                 email:%s, cache data:%s', email, data)
-            raise TooManyRequestsException(msg='frequently request', data={'ttl_secs': REQUEST_INTERVAL_TTL})
+            raise TooManyRequestsException(msg='frequently request', data=self.ttl_secs)
         
         if data:
             self.cache.delete(f'reset_pw:{email}')
