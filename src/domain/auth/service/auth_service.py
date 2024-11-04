@@ -6,7 +6,7 @@ from ....router.req.authorization import (
 )
 from ..model.auth_model import *
 from ...cache import ICache
-from ...service_api import IServiceApi
+from ....app.template.service_api import IServiceApi
 from ....infra.util.util import gen_confirm_code
 from ....infra.util.time_util import gen_timestamp, current_seconds
 from ....config.conf import *
