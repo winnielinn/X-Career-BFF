@@ -2,7 +2,7 @@ import requests as RequestsHTTPLibrary
 from fastapi import status
 from requests.models import Response
 from typing import Dict, Union, Any, Optional
-from ..domain.service_api import IServiceApi
+from ..app.template.service_api import IServiceApi
 from ..config.exception import \
     ClientException, UnauthorizedException, ForbiddenException, NotFoundException, NotAcceptableException,\
     ServerException

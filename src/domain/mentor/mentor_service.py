@@ -1,8 +1,8 @@
 import logging as log
 
 from src.config.constant import MENTOR_ROUTER_URL, USER_SERVICE_PREFIX, API_VERSION, MENTORS
-from src.domain.async_service_api_adapter import AsyncServiceApiAdapter
 from src.domain.cache import ICache
+from ...infra.client.async_service_api_adapter import AsyncServiceApiAdapter
 
 log.basicConfig(filemode='w', level=log.INFO)
 

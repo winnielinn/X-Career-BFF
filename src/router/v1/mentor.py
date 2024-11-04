@@ -6,7 +6,7 @@ from fastapi import (
 from httpx import Response
 
 from ...domain.mentor.mentor_service import MentorService
-from src.domain.async_service_api_adapter import AsyncServiceApiAdapter
+from src.infra.client.async_service_api_adapter import AsyncServiceApiAdapter
 from ...domain.mentor.model import (
     mentor_model as mentor,
     experience_model as experience,

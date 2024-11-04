@@ -79,7 +79,7 @@ def check_response_code(method: str, expected_code: int = 200):
     return decorator_check_response_code
 
 
-class AsyncServiceApiAdapterV2(IServiceApi):
+class AsyncServiceApiAdapter(IServiceApi):
 
     """
     return response body only
