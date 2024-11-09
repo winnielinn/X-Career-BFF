@@ -40,6 +40,14 @@ async def signup(
     return post_success(data=data, msg='email_sent')
 
 
+@router.post('/signup/email-resend', status_code=201)
+async def signup_email_resend(
+    email: EmailStr = Body(...),
+):
+    data = await _auth_service.signup_email_resend(auth_host, email)
+    return post_success(data=data, msg='email_sent')
+
+
 @router.post('/signup/confirm',
              responses=post_response('confirm_signup', SignupResponseVO),
              status_code=201)

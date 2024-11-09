@@ -85,6 +85,33 @@ class AuthService:
         }
         self.cache.set(email, email_playload, ex=REQUEST_INTERVAL_TTL)
 
+
+    '''
+    signup_email_resend
+    '''
+    async def signup_email_resend(self, host: str, email: EmailStr):
+        self.__cache_check_for_signup(email)
+        auth_res = self.__req_send_signup_confirm_email(host, email)
+        if not 'token' in auth_res:
+            raise ServerException(msg='signup fail', data=self.ttl_secs)
+
+        token = auth_res['token']
+        self.refresh_token(email, token)
+        data = self.ttl_secs.copy()
+        if STAGE == TESTING:
+            data.update({'token': token})
+        return data
+
+
+    def refresh_token(self, email: EmailStr, token: str):
+        data = self.cache.get(key=email, with_ttl=True)
+        if not data or not isinstance(data, Dict):
+            raise ServerException(msg='back_to_registration_page')
+
+        data.update({'token': token})
+        self.cache.set(email, data)
+
+
     # return status_code, msg, err
     def __req_send_confirmcode_by_email(self, host: str, email: str, code: str):
         auth_res = self.req.simple_post(f'{host}/sendcode/email', json={
