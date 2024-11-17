@@ -45,7 +45,7 @@ async def signup_email_resend(
     email: EmailStr = Body(..., embed=True),
 ):
     data = await _auth_service.signup_email_resend(auth_host, email)
-    return post_success(data=data, msg='email_sent')
+    return post_success(data=data, msg='Verification email has been resent successfully.')
 
 
 @router.post('/signup/confirm',
@@ -55,7 +55,7 @@ async def confirm_signup(
     token: str = Body(..., embed=True),
 ):
     data = await _auth_service.confirm_signup(auth_host, token)
-    return post_success(data=data)
+    return post_success(data=data, msg='Confirming successful signup.')
 
 
 @router.post('/login',
