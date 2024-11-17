@@ -134,15 +134,6 @@ class AuthService:
         self.cache.set(email, data, ex=REQUEST_INTERVAL_TTL)
 
 
-    def refresh_token(self, email: EmailStr, token: str):
-        data = self.cache.get(key=email, with_ttl=True)
-        if not data or not isinstance(data, Dict):
-            raise ServerException(msg='back_to_registration_page')
-
-        data.update({'token': token})
-        self.cache.set(email, data, ex=LONG_TERM_TTL)
-
-
     # return status_code, msg, err
     def __req_send_confirmcode_by_email(self, host: str, email: str, code: str):
         auth_res = self.req.simple_post(f'{host}/v1/sendcode/email', json={
