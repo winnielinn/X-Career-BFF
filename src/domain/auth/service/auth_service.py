@@ -67,13 +67,13 @@ class AuthService:
 
         except NotAcceptableException or DuplicateUserException as e:
             self.cache.set(email, {}, ex=REQUEST_INTERVAL_TTL)
-            raise DuplicateUserException(msg='Email registered', data=self.ttl_secs)
+            raise DuplicateUserException(msg='Email registered.', data=self.ttl_secs)
 
         except Exception as e:
             log.error(f'{self.__cls_name}.__req_send_signup_confirm_email:[request exception], \
                 host:%s, email:%s, error:%s', host, email, e)
             self.cache.set(email, {}, ex=REQUEST_INTERVAL_TTL)
-            raise_http_exception(e, 'email_could_not_be_delivered', data=self.ttl_secs)
+            raise_http_exception(e, 'Email could not be delivered.', data=self.ttl_secs)
             
 
 
@@ -94,12 +94,12 @@ class AuthService:
         if data and data.get('ttl', 0) > current_seconds():
             log.error(f'{self.__cls_name}.__cache_check_for_resend:[too many reqeusts error],\
                 email:%s, cache data:%s', email, data)
-            raise TooManyRequestsException(msg='frequently request', data=self.ttl_secs)
+            raise TooManyRequestsException(msg='Frequently request.', data=self.ttl_secs)
         
-        if not 'token' in data:
+        if not data or not 'token' in data:
             log.error(f'{self.__cls_name}.__cache_check_for_resend:[no token error],\
                 email:%s, cache data:%s', email, data)
-            raise NotFoundException(msg='token not found')
+            raise NotFoundException(msg='Email not found.')
 
         return data.get('token')
 
@@ -110,7 +110,7 @@ class AuthService:
         old_token = self.__cache_check_for_token(email)
         auth_res = self.__req_send_signup_confirm_email(host, email)
         if not 'token' in auth_res:
-            raise ServerException(msg='signup fail', data=self.ttl_secs)
+            raise ServerException(msg='Signup fail', data=self.ttl_secs)
 
         new_token = auth_res['token']
         self.regenerate_signup_token(old_token, new_token)
@@ -123,7 +123,7 @@ class AuthService:
     def regenerate_signup_token(self, old_token: str, new_token: str):
         data = self.cache.get(old_token)
         if not data or not 'email' in data or not 'password' in data:
-            raise NotFoundException(msg='email or password not found')
+            raise NotFoundException(msg='Email or password not found')
         
         self.cache.set(new_token, data, ex=REQUEST_INTERVAL_TTL)
         self.cache.delete(old_token)
@@ -179,7 +179,7 @@ class AuthService:
     
     def __verify_confirm_token(self, token: str, user: Dict):
         if not user or not 'email' in user:
-            raise NotFoundException(msg='no signup data or wrong token')
+            raise ClientException(msg='Invalid or expired token.')
 
         if user == {}:
             raise DuplicateUserException(msg='registering')
