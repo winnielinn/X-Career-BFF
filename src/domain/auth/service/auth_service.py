@@ -52,12 +52,14 @@ class AuthService:
         
         if data:
             self.cache.delete(email)
+            if 'token' in data:
+                self.cache.delete(data.get('token'))
 
 
     # return status_code, msg, err
     def __req_send_signup_confirm_email(self, host: str, email: str):
         try:
-            auth_res = self.req.simple_post(f'{host}/signup/email', json={
+            auth_res = self.req.simple_post(f'{host}/v1/signup/email', json={
                 'email': email,
                 'exist': False,
             })
@@ -70,8 +72,7 @@ class AuthService:
         except Exception as e:
             log.error(f'{self.__cls_name}.__req_send_signup_confirm_email:[request exception], \
                 host:%s, email:%s, error:%s', host, email, e)
-            # ttl = 10 secs
-            self.cache.set(email, {}, ex=10)
+            self.cache.set(email, {}, ex=REQUEST_INTERVAL_TTL)
             raise_http_exception(e, 'email_could_not_be_delivered', data=self.ttl_secs)
             
 
@@ -81,26 +82,56 @@ class AuthService:
         email_playload = {
             'email': email,
             'password': password,
-            'token': token,
         }
-        self.cache.set(email, email_playload, ex=REQUEST_INTERVAL_TTL)
+        self.cache.set(token, email_playload, ex=REQUEST_INTERVAL_TTL)
+        self.cache.set(email, {'token':token}, ex=REQUEST_INTERVAL_TTL)
 
+    '''
+    email resend check
+    '''
+    def __cache_check_for_token(self, email: str):
+        data = self.cache.get(email, True)
+        if data and data.get('ttl', 0) > current_seconds():
+            log.error(f'{self.__cls_name}.__cache_check_for_resend:[too many reqeusts error],\
+                email:%s, cache data:%s', email, data)
+            raise TooManyRequestsException(msg='frequently request', data=self.ttl_secs)
+        
+        if not 'token' in data:
+            log.error(f'{self.__cls_name}.__cache_check_for_resend:[no token error],\
+                email:%s, cache data:%s', email, data)
+            raise NotFoundException(msg='token not found')
+
+        return data.get('token')
 
     '''
     signup_email_resend
     '''
     async def signup_email_resend(self, host: str, email: EmailStr):
-        self.__cache_check_for_signup(email)
+        old_token = self.__cache_check_for_token(email)
         auth_res = self.__req_send_signup_confirm_email(host, email)
         if not 'token' in auth_res:
             raise ServerException(msg='signup fail', data=self.ttl_secs)
 
-        token = auth_res['token']
-        self.refresh_token(email, token)
+        new_token = auth_res['token']
+        self.regenerate_signup_token(old_token, new_token)
+        
         data = self.ttl_secs.copy()
         if STAGE == TESTING:
-            data.update({'token': token})
+            data.update({'token': new_token})
         return data
+
+    def regenerate_signup_token(self, old_token: str, new_token: str):
+        data = self.cache.get(old_token)
+        if not data or not 'email' in data or not 'password' in data:
+            raise NotFoundException(msg='email or password not found')
+        
+        self.cache.set(new_token, data, ex=REQUEST_INTERVAL_TTL)
+        self.cache.delete(old_token)
+
+        email = data.get('email')
+        data = self.cache.get(email)
+        data.update({'token': new_token})
+        self.cache.set(email, data, ex=REQUEST_INTERVAL_TTL)
 
 
     def refresh_token(self, email: EmailStr, token: str):
@@ -109,12 +140,12 @@ class AuthService:
             raise ServerException(msg='back_to_registration_page')
 
         data.update({'token': token})
-        self.cache.set(email, data)
+        self.cache.set(email, data, ex=LONG_TERM_TTL)
 
 
     # return status_code, msg, err
     def __req_send_confirmcode_by_email(self, host: str, email: str, code: str):
-        auth_res = self.req.simple_post(f'{host}/sendcode/email', json={
+        auth_res = self.req.simple_post(f'{host}/v1/sendcode/email', json={
             'email': email,
             'code': code,
             'exist': False,
@@ -135,18 +166,16 @@ class AuthService:
     confirm_signup
     '''
 
-    async def confirm_signup(self, host: str, body: SignupConfirmDTO):
-        email = body.email
-        token = body.token
-        # user: {email, passowrd, token}
-        user = self.cache.get(email)
+    async def confirm_signup(self, host: str, token):
+        # token: {email, passowrd}
+        user = self.cache.get(token)
         self.__verify_confirm_token(token, user)
 
         # 'registering': empty data
-        self.cache.set(email, {}, ex=REQUEST_INTERVAL_TTL)
-        auth_res = self.req.simple_post(f'{host}/signup',
+        email = user.get('email', None)
+        auth_res = self.req.simple_post(f'{host}/v1/signup',
                                         json={
-                                            'region': body.region,
+                                            'region': LOCAL_REGION,
                                             'email': email,
                                             'password': user['password'],
                                         })
@@ -154,17 +183,19 @@ class AuthService:
         user_id_key = str(auth_res['user_id'])
         self.cache_auth_res(user_id_key, auth_res)
         auth_res = self.apply_token(auth_res)
+        auth_res = self.filter_auth_res(auth_res)
         return {'auth': auth_res}
     
-    def __verify_confirm_token(self, token: str, user: Any):
-        if not user or not 'token' in user:
-            raise NotFoundException(msg='no signup data')
+    def __verify_confirm_token(self, token: str, user: Dict):
+        if not user or not 'email' in user:
+            raise NotFoundException(msg='no signup data or wrong token')
 
         if user == {}:
             raise DuplicateUserException(msg='registering')
 
-        if token != str(user['token']):
-            raise ClientException(msg='wrong_confirm_token')
+        self.cache.delete(token)
+        if 'email' in user:
+            self.cache.delete(user.get('email'))
 
 
     def __verify_confirmcode(self, code: str, user: Any):
@@ -182,6 +213,9 @@ class AuthService:
         token = gen_token(res, ['region', 'user_id'])
         res.update({'token': token})
         return res
+    
+    def filter_auth_res(self, res: Dict):
+        return {k: res[k] for k in res if not k in AUTH_RESPONSE_FIELDS}
     
     '''
     login preload process:
@@ -241,6 +275,7 @@ class AuthService:
         user_id_key = str(auth_res['user_id'])
         self.cache_auth_res(user_id_key, auth_res)
         auth_res = self.apply_token(auth_res)
+        auth_res = self.filter_auth_res(auth_res)
 
         # request user/professional data
         user_res = None
@@ -257,7 +292,7 @@ class AuthService:
 
     def __req_login(self, auth_host: str, body: LoginDTO):
         return self.req.simple_post(
-            f'{auth_host}/login', json=body.dict())
+            f'{auth_host}/v1/login', json=body.dict())
         
 
     def cache_auth_res(self, user_id_key: str, auth_res: Dict):
@@ -416,7 +451,7 @@ class AuthService:
 
     def __req_send_reset_password_comfirm_email(self, auth_host: str, email: EmailStr):
         try:
-            return self.req.simple_get(f'{auth_host}/password/reset/email', params={'email': email}) 
+            return self.req.simple_get(f'{auth_host}/v1/password/reset/email', params={'email': email}) 
         except Exception as e:
             log.error(f'{self.__cls_name}.__req_send_reset_password_comfirm_email:[request exception], \
                 host:%s, email:%s, error:%s', auth_host, email, e)
@@ -430,8 +465,8 @@ class AuthService:
 
     def __req_update_password(self, auth_host: str, body: UpdatePasswordDTO):
         return self.req.simple_put(
-            f'{auth_host}/password/update', json=body.dict())
+            f'{auth_host}/v1/password/update', json=body.dict())
 
     def __req_reset_password(self, auth_host: str, body: ResetPasswordDTO):
         return self.req.simple_put(
-            f'{auth_host}/password/update', json=body.dict()) 
+            f'{auth_host}/v1/password/update', json=body.dict()) 

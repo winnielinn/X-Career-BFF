@@ -1,7 +1,8 @@
 import os
 import json
 
-AWS_PROFILE = os.getenv('AWS_PROFILE', 'xc') # xc default
+LOCAL_REGION = os.getenv('AWS_REGION', 'ap-northeast-1')
+AWS_PROFILE = os.getenv('AWS_PROFILE', 'default') # xc default
 STAGE = os.getenv('STAGE', 'local')
 TESTING = os.getenv('TESTING', 'local')
 
@@ -20,6 +21,10 @@ REQUEST_INTERVAL_TTL = int(os.getenv('REQUEST_INTERVAL_TTL', 8))
 SHORT_TERM_TTL = int(os.getenv('SHORT_TERM_TTL', 1800))
 # default = 3 days (3 * 86400 secs)
 LONG_TERM_TTL = int(os.getenv('LONG_TERM_TTL', 3 * 86400))
+
+# filter auth response fields
+AUTH_RESPONSE_FIELDS = os.getenv('AUTH_RESPONSE_FIELDS', 'email,account_type,region,online')
+AUTH_RESPONSE_FIELDS = AUTH_RESPONSE_FIELDS.strip().split(',')
 
 
 # cache
