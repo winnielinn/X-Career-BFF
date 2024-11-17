@@ -170,10 +170,10 @@ class AuthService:
                                             'email': email,
                                             'password': user['password'],
                                         })
-        user_res = self.req.simple_post(f'{user_host}/mentors/mentor_profile/create',
+        user_res = self.req.simple_put(f'{user_host}/v1/mentors/mentor_profile/create',
                                         json={
                                             'region': body.region,
-                                            'email': body:,
+                                            'email': body.email,
                                         })
 
         user_id_key = str(auth_res['user_id'])
