@@ -1,10 +1,20 @@
 from typing import Dict, Optional
 from .client_response import ClientResponse
+import httpx
 
 class ServiceApiResponse(ClientResponse):
     data: Optional[Dict] = None
 
-    def get_data(self):
-        if 'data' in self.res_json:
-            return self.res_json['data']
+    @staticmethod
+    def parse(response: httpx.Response = None) -> 'ServiceApiResponse':
+        if response:
+            return ServiceApiResponse(
+                status_code=response.status_code,
+                headers=response.headers,
+                res_json=response.json(),
+                res_content=response.content,
+                res_text=response.text,
+                data=response.json().get('data', {}),
+            )
+
         return None
