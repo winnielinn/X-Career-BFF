@@ -30,67 +30,67 @@ class AuthService:
     '''
     async def signup(self, host: str, body: SignupDTO):
         email = body.email
-        self.__cache_check_for_signup(email)
-        auth_res = self.__req_send_signup_confirm_email(host, email)
+        await self.__cache_check_for_signup(email)
+        auth_res = await self.__req_send_signup_confirm_email(host, email)
         if not 'token' in auth_res:
             raise ServerException(msg='signup fail', data=self.ttl_secs)
 
         token = auth_res['token']
-        self.__cache_signup_token(email, body.password, token)
+        await self.__cache_signup_token(email, body.password, token)
         data = self.ttl_secs.copy()
         if STAGE == TESTING:
             data.update({'token': token})
         return data
 
 
-    def __cache_check_for_signup(self, email: str):
-        data = self.cache.get(email, True)
+    async def __cache_check_for_signup(self, email: str):
+        data = await self.cache.get(email, True)
         if data and data.get('ttl', 0) > current_seconds():
             log.error(f'{self.__cls_name}.__cache_check_for_signup:[too many reqeusts error],\
                 email:%s, cache data:%s', email, data)
             raise TooManyRequestsException(msg='frequently request', data=self.ttl_secs)
         
         if data:
-            self.cache.delete(email)
+            await self.cache.delete(email)
             if 'token' in data:
-                self.cache.delete(data.get('token'))
+                await self.cache.delete(data.get('token'))
 
 
     # return status_code, msg, err
-    def __req_send_signup_confirm_email(self, host: str, email: str):
+    async def __req_send_signup_confirm_email(self, host: str, email: str):
         try:
-            auth_res = self.req.simple_post(f'{host}/v1/signup/email', json={
+            auth_res = await self.req.simple_post(f'{host}/v1/signup/email', json={
                 'email': email,
                 'exist': False,
             })
             return auth_res
 
         except NotAcceptableException or DuplicateUserException as e:
-            self.cache.set(email, {}, ex=REQUEST_INTERVAL_TTL)
+            await self.cache.set(email, {}, ex=REQUEST_INTERVAL_TTL)
             raise DuplicateUserException(msg='Email registered.', data=self.ttl_secs)
 
         except Exception as e:
             log.error(f'{self.__cls_name}.__req_send_signup_confirm_email:[request exception], \
                 host:%s, email:%s, error:%s', host, email, e)
-            self.cache.set(email, {}, ex=REQUEST_INTERVAL_TTL)
+            await self.cache.set(email, {}, ex=REQUEST_INTERVAL_TTL)
             raise_http_exception(e, 'Email could not be delivered.', data=self.ttl_secs)
             
 
 
-    def __cache_signup_token(self, email: EmailStr, password: str, token: str):
+    async def __cache_signup_token(self, email: EmailStr, password: str, token: str):
         # TODO: region 記錄在???
         email_playload = {
             'email': email,
             'password': password,
         }
-        self.cache.set(token, email_playload, ex=REQUEST_INTERVAL_TTL)
-        self.cache.set(email, {'token':token}, ex=REQUEST_INTERVAL_TTL)
+        await self.cache.set(token, email_playload, ex=REQUEST_INTERVAL_TTL)
+        await self.cache.set(email, {'token':token}, ex=REQUEST_INTERVAL_TTL)
 
     '''
     email resend check
     '''
-    def __cache_check_for_token(self, email: str):
-        data = self.cache.get(email, True)
+    async def __cache_check_for_token(self, email: str):
+        data = await self.cache.get(email, True)
         if data and data.get('ttl', 0) > current_seconds():
             log.error(f'{self.__cls_name}.__cache_check_for_resend:[too many reqeusts error],\
                 email:%s, cache data:%s', email, data)
@@ -107,36 +107,36 @@ class AuthService:
     signup_email_resend
     '''
     async def signup_email_resend(self, host: str, email: EmailStr):
-        old_token = self.__cache_check_for_token(email)
-        auth_res = self.__req_send_signup_confirm_email(host, email)
+        old_token = await self.__cache_check_for_token(email)
+        auth_res = await self.__req_send_signup_confirm_email(host, email)
         if not 'token' in auth_res:
             raise ServerException(msg='Signup fail', data=self.ttl_secs)
 
         new_token = auth_res['token']
-        self.regenerate_signup_token(old_token, new_token)
+        await self.regenerate_signup_token(old_token, new_token)
         
         data = self.ttl_secs.copy()
         if STAGE == TESTING:
             data.update({'token': new_token})
         return data
 
-    def regenerate_signup_token(self, old_token: str, new_token: str):
-        data = self.cache.get(old_token)
+    async def regenerate_signup_token(self, old_token: str, new_token: str):
+        data = await self.cache.get(old_token)
         if not data or not 'email' in data or not 'password' in data:
             raise NotFoundException(msg='Email or password not found')
         
-        self.cache.set(new_token, data, ex=REQUEST_INTERVAL_TTL)
-        self.cache.delete(old_token)
+        await self.cache.set(new_token, data, ex=REQUEST_INTERVAL_TTL)
+        await self.cache.delete(old_token)
 
         email = data.get('email')
-        data = self.cache.get(email)
+        data = await self.cache.get(email)
         data.update({'token': new_token})
-        self.cache.set(email, data, ex=REQUEST_INTERVAL_TTL)
+        await self.cache.set(email, data, ex=REQUEST_INTERVAL_TTL)
 
 
     # return status_code, msg, err
-    def __req_send_confirmcode_by_email(self, host: str, email: str, code: str):
-        auth_res = self.req.simple_post(f'{host}/v1/sendcode/email', json={
+    async def __req_send_confirmcode_by_email(self, host: str, email: str, code: str):
+        auth_res = await self.req.simple_post(f'{host}/v1/sendcode/email', json={
             'email': email,
             'code': code,
             'exist': False,
@@ -144,14 +144,14 @@ class AuthService:
 
         return auth_res
 
-    def __cache_confirmcode(self, email: EmailStr, password: str, code: str):
+    async def __cache_confirmcode(self, email: EmailStr, password: str, code: str):
         # TODO: region 記錄在???
         email_playload = {
             'email': email,
             'password': password,
             'code': code,
         }
-        self.cache.set(email, email_playload, ex=REQUEST_INTERVAL_TTL)
+        await self.cache.set(email, email_playload, ex=REQUEST_INTERVAL_TTL)
 
     '''
     confirm_signup
@@ -159,34 +159,39 @@ class AuthService:
 
     async def confirm_signup(self, host: str, token):
         # token: {email, passowrd}
-        user = self.cache.get(token)
-        self.__verify_confirm_token(token, user)
+        user = await self.cache.get(token)
+        await self.__verify_confirm_token(token, user)
 
         # 'registering': empty data
         email = user.get('email', None)
-        auth_res = self.req.simple_post(f'{host}/v1/signup',
+        auth_res = await self.req.simple_post(f'{host}/v1/signup',
                                         json={
                                             'region': LOCAL_REGION,
                                             'email': email,
                                             'password': user['password'],
                                         })
+        # user_res = await self.req.simple_put(f'{user_host}/v1/mentors/mentor_profile/create',
+        #                                 json={
+        #                                     'region': body.region,
+        #                                     'email': body.email,
+        #                                 })
 
         user_id_key = str(auth_res['user_id'])
-        self.cache_auth_res(user_id_key, auth_res)
+        await self.cache_auth_res(user_id_key, auth_res)
         auth_res = self.apply_token(auth_res)
         auth_res = self.filter_auth_res(auth_res)
         return {'auth': auth_res}
     
-    def __verify_confirm_token(self, token: str, user: Dict):
+    async def __verify_confirm_token(self, token: str, user: Dict):
         if not user or not 'email' in user:
             raise ClientException(msg='Invalid or expired token.')
 
         if user == {}:
             raise DuplicateUserException(msg='registering')
 
-        self.cache.delete(token)
+        await self.cache.delete(token)
         if 'email' in user:
-            self.cache.delete(user.get('email'))
+            await self.cache.delete(user.get('email'))
 
 
     def __verify_confirmcode(self, code: str, user: Any):
@@ -260,38 +265,37 @@ class AuthService:
     '''
 
     async def login(self, auth_host: str, user_host: str, body: LoginDTO):
-        auth_res = self.__req_login(auth_host, body)
+        auth_res = await self.__req_login(auth_host, body)
+        user_id = auth_res.get('user_id')
 
         # cache auth data
-        user_id_key = str(auth_res['user_id'])
-        self.cache_auth_res(user_id_key, auth_res)
+        await self.cache_auth_res(str(user_id), auth_res)
         auth_res = self.apply_token(auth_res)
-        auth_res = self.filter_auth_res(auth_res)
 
-        # request user/professional data
+        # 育志看一下這 API
+        # user_res = await self.req.simple_get(f'{user_host}/v1/users/{user_id}/profile')
         user_res = None
-        # TODO: user service API 尚未調整
-        # self.req_user_data(
-        #     user_host,
-        #     user_id_key,
-        # )
 
+        auth_res = self.filter_auth_res(auth_res)
         return {
             'auth': auth_res,
             'user': user_res,
         }
 
-    def __req_login(self, auth_host: str, body: LoginDTO):
-        return self.req.simple_post(
+    async def __req_login(self, auth_host: str, body: LoginDTO):
+        auth_res = await self.req.simple_post(
             f'{auth_host}/v1/login', json=body.dict())
+        if not auth_res or not 'user_id' in auth_res:
+            raise UnauthorizedException(msg='Invalid user.')
+        return auth_res
         
 
-    def cache_auth_res(self, user_id_key: str, auth_res: Dict):
+    async def cache_auth_res(self, user_id_key: str, auth_res: Dict):
         auth_res.update({
             'online': True,
             'refresh_token': gen_refresh_token(),
         })
-        updated = self.cache.set(
+        updated = await self.cache.set(
             user_id_key, auth_res, ex=LONG_TERM_TTL)
         if not updated:
             log.error(f'{self.__cls_name}.__cache_auth_res fail: [cache set],\
@@ -303,8 +307,8 @@ class AuthService:
         auth_res.pop('aid', None)
 
 
-    def req_user_data(self, user_host: str, user_id_key: str):            
-        user_res = self.req.simple_get(
+    async def req_user_data(self, user_host: str, user_id_key: str):            
+        user_res = await self.req.simple_get(
             # TODO: user service API 尚未調整
             url=f'{user_host}{user_id_key}/userdata',
             params={
@@ -320,7 +324,7 @@ class AuthService:
     '''
     async def get_new_token_pair(self, body: NewTokenDTO) -> (str):
         user_id_key = str(body.user_id)
-        user = self.cache.get(user_id_key)
+        user = await self.cache.get(user_id_key)
         if not user:
             raise UnauthorizedException(msg='Invalid user')
         
@@ -329,7 +333,7 @@ class AuthService:
             not valid_refresh_token(cached_refresh_token):
             raise UnauthorizedException(msg='Invalid User')
 
-        self.cache_auth_res(user_id_key, user)
+        await self.cache_auth_res(user_id_key, user)
         res = self.apply_token(user)
         return {k: res[k] for k in ['token', 'refresh_token'] if k in res}
 
@@ -340,15 +344,15 @@ class AuthService:
 
     async def logout(self, user_id: int):
         user_id_key = str(user_id)
-        user = self.__cache_check_for_auth(user_id_key)
+        user = await self.__cache_check_for_auth(user_id_key)
         user_logout_status = self.__logout_status(user)
 
         # 'LONG_TERM_TTL' for redirct notification
-        self.__cache_logout_status(user_id_key, user_logout_status)
+        await self.__cache_logout_status(user_id_key, user_logout_status)
         return (None, 'successfully logged out')
     
     @staticmethod
-    def is_login(cache: ICache, visitor: BaseAuthDTO = None) -> (bool):
+    async def is_login(cache: ICache, visitor: BaseAuthDTO = None) -> (bool):
         if visitor is None:
             return False
 
@@ -359,8 +363,8 @@ class AuthService:
 
         return user.get('online', False)
 
-    def __cache_check_for_auth(self, user_id_key: str):
-        user = self.cache.get(user_id_key)
+    async def __cache_check_for_auth(self, user_id_key: str):
+        user = await self.cache.get(user_id_key)
         if not user or not user.get('online', False):
             raise ClientException(msg='logged out')
 
@@ -376,8 +380,8 @@ class AuthService:
             'online': False,
         }
 
-    def __cache_logout_status(self, user_id_key: str, user_logout_status: Dict):
-        updated = self.cache.set(
+    async def __cache_logout_status(self, user_id_key: str, user_logout_status: Dict):
+        updated = await self.cache.set(
             user_id_key, user_logout_status, ex=LONG_TERM_TTL)
         if not updated:
             log.error(f'{self.__cls_name}.__cache_logout_status fail: [cache set],\
@@ -389,75 +393,75 @@ class AuthService:
     password
     '''
     async def send_reset_password_comfirm_email(self, auth_host: str, email: EmailStr):
-        self.__cache_check_for_reset_password(email)
-        data = self.__req_send_reset_password_comfirm_email(auth_host, email)
+        await self.__cache_check_for_reset_password(email)
+        data = await self.__req_send_reset_password_comfirm_email(auth_host, email)
         if data != None and 'token' in data:
             token = data['token']
+            await self.__cache_token_by_reset_password(token, email)
         else:
             token = email + ':not_exist'
         
-        self.__cache_token_by_reset_password(token, email)
         data = self.ttl_secs.copy()
         if STAGE == TESTING:
             data.update({'token': token})
         return data
 
     async def reset_passwrod(self, auth_host: str, verify_token: str, body: ResetPasswordDTO):
-        checked_email = self.cache.get(verify_token)
+        checked_email = await self.cache.get(verify_token)
         if not checked_email:
             raise UnauthorizedException(msg='invalid token') 
         if checked_email != body.register_email:
             raise UnauthorizedException(msg='invalid user')
-        self.__req_reset_password(auth_host, body)
-        self.__cache_remove_by_reset_password(verify_token, checked_email)
+        await self.__req_reset_password(auth_host, body)
+        await self.__cache_remove_by_reset_password(verify_token, checked_email)
 
     
-    def __cache_check_for_reset_password(self, email: EmailStr):
-        data = self.cache.get(f'reset_pw:{email}', True)
+    async def __cache_check_for_reset_password(self, email: EmailStr):
+        data = await self.cache.get(f'reset_pw:{email}', True)
         if data and data.get('ttl', 0) > current_seconds():
             log.error(f'{self.__cls_name}.__cache_check_for_reset_password:[too many reqeusts error],\
                 email:%s, cache data:%s', email, data)
             raise TooManyRequestsException(msg='frequently request', data=self.ttl_secs)
         
         if data:
-            self.cache.delete(f'reset_pw:{email}')
+            await self.cache.delete(f'reset_pw:{email}')
             # 將用不到的 verify_token 刪除
             verify_token = data.get('token', None)
             if verify_token:
-                self.cache.delete(verify_token)
+                await self.cache.delete(verify_token)
 
 
-    def __cache_token_by_reset_password(self, verify_token: str, email: EmailStr):
-        self.cache.set(f'reset_pw:{email}', {'token':verify_token}, REQUEST_INTERVAL_TTL)
-        self.cache.set(verify_token, email, REQUEST_INTERVAL_TTL)
+    async def __cache_token_by_reset_password(self, verify_token: str, email: EmailStr):
+        await self.cache.set(f'reset_pw:{email}', {'token':verify_token}, REQUEST_INTERVAL_TTL)
+        await self.cache.set(verify_token, email, REQUEST_INTERVAL_TTL)
         
-    def __cache_remove_by_reset_password(self, verify_token: str, email: EmailStr):
-        self.cache.delete(f'reset_pw:{email}')
-        self.cache.delete(verify_token)
+    async def __cache_remove_by_reset_password(self, verify_token: str, email: EmailStr):
+        await self.cache.delete(f'reset_pw:{email}')
+        await self.cache.delete(verify_token)
         
 
     async def update_password(self, auth_host: str, user_id: int, body: UpdatePasswordDTO):
         self.__cache_check_for_email_validation(user_id, body.register_email)
         self.__req_update_password(auth_host, body)
 
-    def __req_send_reset_password_comfirm_email(self, auth_host: str, email: EmailStr):
+    async def __req_send_reset_password_comfirm_email(self, auth_host: str, email: EmailStr):
         try:
-            return self.req.simple_get(f'{auth_host}/v1/password/reset/email', params={'email': email}) 
+            return await self.req.simple_get(f'{auth_host}/v1/password/reset/email', params={'email': email}) 
         except Exception as e:
             log.error(f'{self.__cls_name}.__req_send_reset_password_comfirm_email:[request exception], \
                 host:%s, email:%s, error:%s', auth_host, email, e)
             return None
 
-    def __cache_check_for_email_validation(self, user_id: int, register_email: EmailStr):
+    async def __cache_check_for_email_validation(self, user_id: int, register_email: EmailStr):
         user_id_key = str(user_id)
-        data = self.cache.get(user_id_key)
+        data = await self.cache.get(user_id_key)
         if data is None or not 'email' in data or str(register_email) != data['email']:
             raise UnauthorizedException(msg='invalid email')
 
-    def __req_update_password(self, auth_host: str, body: UpdatePasswordDTO):
-        return self.req.simple_put(
+    async def __req_update_password(self, auth_host: str, body: UpdatePasswordDTO):
+        return await self.req.simple_put(
             f'{auth_host}/v1/password/update', json=body.dict())
 
-    def __req_reset_password(self, auth_host: str, body: ResetPasswordDTO):
-        return self.req.simple_put(
+    async def __req_reset_password(self, auth_host: str, body: ResetPasswordDTO):
+        return await self.req.simple_put(
             f'{auth_host}/v1/password/update', json=body.dict()) 

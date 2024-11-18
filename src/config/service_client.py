@@ -1,4 +1,4 @@
 import requests
-from ..app.service_api_dapter import ServiceApiAdapter
+from ..infra.client.async_service_api_adapter import AsyncServiceApiAdapter
 
-service_client = ServiceApiAdapter(requests)
+service_client = AsyncServiceApiAdapter()

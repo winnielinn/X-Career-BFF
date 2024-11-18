@@ -22,7 +22,7 @@ class DynamoDbCacheAdapter(ICache):
         return (val[0] == '{' and val[-1] == '}') or \
             (val[0] == '[' and val[-1] == ']')
 
-    def get(self, key: str, with_ttl: bool = False):
+    async def get(self, key: str, with_ttl: bool = False):
         res = None
         result = None
         try:
@@ -45,7 +45,7 @@ class DynamoDbCacheAdapter(ICache):
                       key, res, result, e.__str__())
             raise ServerException(msg='d2_server_error')
 
-    def set(self, key: str, val: Any, ex: int = None):
+    async def set(self, key: str, val: Any, ex: int = None):
         res = None
         result = False
         try:
@@ -72,7 +72,7 @@ class DynamoDbCacheAdapter(ICache):
                       key, val, ex, res, result, e.__str__())
             raise ServerException(msg='d2_server_error')
 
-    def delete(self, key: str):
+    async def delete(self, key: str):
         try:
             table = self.db.Table(TABLE_CACHE)
             table.delete_item(Key={'cache_key': key})
@@ -82,8 +82,8 @@ class DynamoDbCacheAdapter(ICache):
                       key, e.__str__())
             raise ServerException(msg='d2_server_error')
 
-    def smembers(self, key: str) -> (Optional[Set[Any]]):
-        values = self.get(key)
+    async def smembers(self, key: str) -> (Optional[Set[Any]]):
+        values = await self.get(key)
         if values is None:
             return None
 
@@ -92,14 +92,14 @@ class DynamoDbCacheAdapter(ICache):
 
         return set(values)
 
-    def sismember(self, key: str, value: Any) -> (bool):
-        set_members = self.smembers(key)
+    async def sismember(self, key: str, value: Any) -> (bool):
+        set_members = await self.smembers(key)
         if set_members is None:
             return False
 
         return value in set_members
 
-    def sadd(self, key: str, values: List[Any], ex: int = None) -> (int):
+    async def sadd(self, key: str, values: List[Any], ex: int = None) -> (int):
         if not isinstance(values, list):
             raise ServerException(
                 msg='invalid input type, values should be list')
@@ -109,24 +109,24 @@ class DynamoDbCacheAdapter(ICache):
         update_count = 0
         set_members = self.smembers(key)
         if set_members is None:
-            self.set(key, list(set_values), ex)
+            await self.set(key, list(set_values), ex)
 
         else:
             new_set_members = set_members | set_values
-            self.set(key, list(new_set_members), ex)
+            await self.set(key, list(new_set_members), ex)
 
         update_count = len(values)
         return update_count
 
-    def srem(self, key: str, value: Any) -> (int):
+    async def srem(self, key: str, value: Any) -> (int):
         update_count = 0
-        set_members = self.smembers(key)
+        set_members = await self.smembers(key)
         if set_members is None:
             return update_count
 
         if value in set_members:
             set_members.remove(value)
-            self.set(key, list(set_members))
+            await self.set(key, list(set_members))
             update_count = 1
         else:
             update_count = 0
