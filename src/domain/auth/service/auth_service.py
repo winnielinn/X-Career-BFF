@@ -266,29 +266,28 @@ class AuthService:
 
     async def login(self, auth_host: str, user_host: str, body: LoginDTO):
         auth_res = await self.__req_login(auth_host, body)
+        user_id = auth_res.get('user_id')
 
         # cache auth data
-        user_id_key = str(auth_res['user_id'])
-        await self.cache_auth_res(user_id_key, auth_res)
+        await self.cache_auth_res(str(user_id), auth_res)
         auth_res = self.apply_token(auth_res)
-        auth_res = self.filter_auth_res(auth_res)
 
-        # request user/professional data
+        # 育志看一下這 API
+        # user_res = await self.req.simple_get(f'{user_host}/v1/users/{user_id}/profile')
         user_res = None
-        # TODO: user service API 尚未調整
-        # self.req_user_data(
-        #     user_host,
-        #     user_id_key,
-        # )
 
+        auth_res = self.filter_auth_res(auth_res)
         return {
             'auth': auth_res,
             'user': user_res,
         }
 
     async def __req_login(self, auth_host: str, body: LoginDTO):
-        return await self.req.simple_post(
+        auth_res = await self.req.simple_post(
             f'{auth_host}/v1/login', json=body.dict())
+        if not auth_res or not 'user_id' in auth_res:
+            raise UnauthorizedException(msg='Invalid user.')
+        return auth_res
         
 
     async def cache_auth_res(self, user_id_key: str, auth_res: Dict):
